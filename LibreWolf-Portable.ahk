@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://github.com/ltGuillaume/LibreWolf-Portable
-;@Ahk2Exe-SetFileVersion 1.0.1
+;@Ahk2Exe-SetFileVersion 1.1.0
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf Portable
@@ -12,6 +12,7 @@
 ProgramPath       := A_ScriptDir "\LibreWolf"
 ExeFile           := ProgramPath "\librewolf.exe"
 ProfilePath       := A_ScriptDir "\Profiles\Default"
+LastPathFile      := ProfilePath "\.portable-lastpath"
 PortableRunning   := False
 
 ; Strings
@@ -94,6 +95,14 @@ PrepFolder:
 			FileMoveDir, %Folder%, %Folder%.pbak, 2
 	}
 }
+
+; Skip path adjustment if profile path hasn't changed since last run
+If FileExist(LastPathFile) {
+	FileRead, LastPath, %LastPathFile%
+	If LastPath = %ProfilePath%
+		Goto, Run
+}
+;MsgBox, Time to adjust the absolute profile path
 
 ; Adjust absolute profile folder paths to current path
 FileInstall, dejsonlz4.exe, %Temp%\dejsonlz4.exe, 0
@@ -181,6 +190,10 @@ For Process in ComObjGet("winmgmts:").ExecQuery("Select ProcessId from Win32_Pro
 
 If StillRunning
 	Goto, WaitClose
+
+; Write current profile path to file
+FileDelete, %LastPathFile%
+FileAppend, %ProfilePath%, %LastPathFile%
 
 ; Restore registry and folders
 RegDelete, %RegKey%
