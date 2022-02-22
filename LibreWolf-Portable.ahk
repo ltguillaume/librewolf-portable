@@ -40,6 +40,7 @@ If !A_IsCompiled
 
 ; Check for running LibreWolf-Portable processes
 DetectHiddenWindows, On
+SetTitleMatchMode 2
 WinGet, Self, List, %A_ScriptName% ahk_exe %A_ScriptName%
 Loop, %Self%
 	If (Self%A_Index% != A_ScriptHwnd) {
