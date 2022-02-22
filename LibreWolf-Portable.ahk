@@ -59,6 +59,8 @@ If !FileExist(ProfilePath) {
 	MsgBox, 52, %_Title%, %_GetProfilePathError%
 	IfMsgBox No
 		Exit
+	IfMsgBox Yes
+		FileCreateDir, %ProfilePath%
 }
 
 ; Backup existing registry key and AppData folders
@@ -101,7 +103,8 @@ If FileExist(LastPathFile) {
 	FileRead, LastPath, %LastPathFile%
 	If LastPath = %ProfilePath%
 		Goto, Run
-}
+} Else
+	FileAppend, %ProfilePath%, %LastPathFile%
 ;MsgBox, Time to adjust the absolute profile path
 
 ; Adjust absolute profile folder paths to current path
@@ -155,6 +158,10 @@ ReplacePaths(FilePath) {
 	}
 }
 
+; Write current profile path to file
+FileDelete, %LastPathFile%
+FileAppend, %ProfilePath%, %LastPathFile%
+
 ; Run LibreWolf
 Run:
 For i, Arg in A_Args
@@ -193,10 +200,6 @@ For Process in ComObjGet("winmgmts:").ExecQuery("Select ProcessId from Win32_Pro
 
 If StillRunning
 	Goto, WaitClose
-
-; Write current profile path to file
-FileDelete, %LastPathFile%
-FileAppend, %ProfilePath%, %LastPathFile%
 
 ; Restore registry and folders
 RegDelete, %RegKey%
