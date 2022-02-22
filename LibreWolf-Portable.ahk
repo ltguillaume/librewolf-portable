@@ -50,6 +50,15 @@ Loop, %Self%
 		Goto, Run
 	}
 
+; Check for updates (once a day) if LibreWolf-WinUpdater is found
+WinUpdater := A_ScriptDir "\LibreWolf-WinUpdater"
+If FileExist(WinUpdater ".exe") {
+	If FileExist(WinUpdater ".ini")
+		FileGetTime, LastUpdate, %WinUpdater%.ini
+	If !LastUpdate Or SubStr(LastUpdate, 1, 8) < SubStr(A_Now, 1, 8)
+		RunWait, %WinUpdater%.exe
+}
+
 ; Check path to LibreWolf and profile
 If !FileExist(ExeFile) {
 	MsgBox, 48, %_Title%, %_GetProgramPathError%
