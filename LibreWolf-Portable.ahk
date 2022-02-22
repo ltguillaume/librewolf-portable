@@ -179,13 +179,16 @@ WaitClose:
 Sleep, 5000
 StillRunning := False
 For Process in ComObjGet("winmgmts:").ExecQuery("Select ProcessId from Win32_Process where ExecutablePath='" ExeFileDS "'") {
-   oUser := ComObject(0x400C, &User)	; VT_BYREF
-   Process.GetOwner(oUser)
+   Try {
+		oUser := ComObject(0x400C, &User)	; VT_BYREF
+		Process.GetOwner(oUser)
 ;MsgBox, % oUser[]
-	If (oUser[] = A_UserName) {
-		StillRunning := True
-		Break
-	}
+		If (oUser[] = A_UserName) {
+			StillRunning := True
+			Break
+		}
+	} Catch e
+		Goto, WaitClose
 }
 
 If StillRunning
