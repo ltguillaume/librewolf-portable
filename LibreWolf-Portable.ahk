@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://github.com/ltGuillaume/LibreWolf-Portable
-;@Ahk2Exe-SetFileVersion 1.0.0
+;@Ahk2Exe-SetFileVersion 1.0.1
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf Portable
@@ -10,18 +10,17 @@
 ;@Ahk2Exe-PostExec ResourceHacker.exe -open "%A_WorkFileName%" -save "%A_WorkFileName%" -action delete -mask ICONGROUP`,208`, ,,,,1
 
 ProgramPath       := A_ScriptDir "\LibreWolf"
-ProfilePath       := A_ScriptDir "\Profiles\Default"
-IniFile           := A_ScriptDir "\LibreWolf-Portable.ini"
 ExeFile           := ProgramPath "\librewolf.exe"
+ProfilePath       := A_ScriptDir "\Profiles\Default"
 PortableRunning   := False
 
 ; Strings
 _Title                = LibreWolf Portable
 _GetProgramPathError  = Could not find the path to LibreWolf:`n%ProgramPath%
 _GetProfilePathError  = Could not find the path to the profile folder:`n%ProfilePath%`nIf this is the first time you are running LibreWolf Portable, you can ignore this. Continue?
-_BackupKeyFound       = A backed up registry key has been found:
-_BackupFolderFound    = A backup up folder has been found:
-_BackupFoundActions   = This means LibreWolf Portable has probably not been closed correctly. Continue to restore the found backup, or remove the backup folder and press Retry to back up the current folder.
+_BackupKeyFound       = A backup registry key has been found:
+_BackupFolderFound    = A backup folder has been found:
+_BackupFoundActions   = This means LibreWolf Portable has probably not been closed correctly. Continue to restore the found backup after running, or remove the backup yourself and press Retry to back up the current folder/key.
 _ErrorStarting        = LibreWolf could not be started. Exit code:
 _MissingDLLs          = You probably don't have msvcp140.dll and vcruntime140.dll present on your system. Put these files in the folder %ProgramPath%,`nor install the Visual C++ runtime libraries via https://librewolf.net.
 _FileReadError        = Error reading file for modification:
@@ -49,7 +48,7 @@ Loop, %Self%
 		Goto, Run
 	}
 
-; Check path to LibreWolf
+; Check path to LibreWolf and profile
 If !FileExist(ExeFile) {
 	MsgBox, 48, %_Title%, %_GetProgramPathError%
 	Exit
@@ -61,8 +60,8 @@ If !FileExist(ProfilePath) {
 }
 
 ; Backup existing registry key and AppData folders
-RegKey       := "HKCU\Software\LibreWolf"
-Folders      := [A_AppData "\LibreWolf", LocalAppData "\LibreWolf"]
+RegKey  := "HKCU\Software\LibreWolf"
+Folders := [A_AppData "\LibreWolf", LocalAppData "\LibreWolf"]
 
 PrepRegistry:
 RegRead, null, %RegKey%
@@ -74,11 +73,9 @@ If !ErrorLevel {
 			Exit
 		IfMsgBox TryAgain
 			Goto, PrepRegistry
-		IfMsgBox Continue
-			RegDelete, %RegKey%
 	} Else
 		RunWait, reg copy %RegKey% %RegKey%.pbak /s /f
-		RegDelete, %RegKey%
+	RegDelete, %RegKey%
 }
 
 For i, Folder in Folders {
@@ -152,8 +149,8 @@ ReplacePaths(FilePath) {
 Run:
 For i, Arg in A_Args
 	Args .= " """ Arg """"
-;MsgBox, %ExeFile% -foreground -profile "%ProfilePath%" %Args%
-RunWait, %ExeFile% -foreground -profile "%ProfilePath%" %Args%,, UseErrorLevel
+;MsgBox, %ExeFile% -profile "%ProfilePath%" %Args%
+RunWait, %ExeFile% -profile "%ProfilePath%" %Args%,, UseErrorLevel
 
 If ErrorLevel {
 	Message := _ErrorStarting " " ErrorLevel
@@ -166,13 +163,12 @@ If ErrorLevel {
 If PortableRunning
 	Exit
 
-WmiPath := StrReplace(Path, "\", "\\")
+ExeFileDS := StrReplace(ExeFile, "\", "\\")
 ; Wait for all LibreWolf processes of current user to be closed
-; ------------- NOT WORKING ------------
 WaitClose:
 Sleep, 5000
 StillRunning := False
-For Process in ComObjGet("winmgmts:").ExecQuery("Select ProcessId from Win32_Process where ExecutablePath='" WmiPath "'") {
+For Process in ComObjGet("winmgmts:").ExecQuery("Select ProcessId from Win32_Process where ExecutablePath='" ExeFileDS "'") {
    oUser := ComObject(0x400C, &User)	; VT_BYREF
    Process.GetOwner(oUser)
 ;MsgBox, % oUser[]
