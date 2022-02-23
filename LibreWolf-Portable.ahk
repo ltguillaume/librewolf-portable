@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://github.com/ltGuillaume/LibreWolf-Portable
-;@Ahk2Exe-SetFileVersion 1.1.1
+;@Ahk2Exe-SetFileVersion 1.2.0
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf Portable
@@ -20,8 +20,7 @@ _Title                = LibreWolf Portable
 _GetProgramPathError  = Could not find the path to LibreWolf:`n%ProgramPath%
 _GetProfilePathError  = Could not find the path to the profile folder:`n%ProfilePath%`nIf this is the first time you are running LibreWolf Portable, you can ignore this. Continue?
 _BackupKeyFound       = A backup registry key has been found:
-_BackupFolderFound    = A backup folder has been found:
-_BackupFoundActions   = This means LibreWolf Portable has probably not been closed correctly. Continue to restore the found backup after running, or remove the backup yourself and press Retry to back up the current folder/key.
+_BackupFoundActions   = This means LibreWolf Portable has probably not been closed correctly. Continue to restore the found backup key after running, or remove the backup key yourself and press Retry to back up the current key.
 _ErrorStarting        = LibreWolf could not be started. Exit code:
 _MissingDLLs          = You probably don't have msvcp140.dll and vcruntime140.dll present on your system. Put these files in the folder %ProgramPath%,`nor install the Visual C++ runtime libraries via https://librewolf.net.
 _FileReadError        = Error reading file for modification:
@@ -72,39 +71,27 @@ If !FileExist(ProfilePath) {
 		FileCreateDir, %ProfilePath%
 }
 
-; Backup existing registry key and AppData folders
+; Backup existing registry key
 RegKey  := "HKCU\Software\LibreWolf"
-Folders := [A_AppData "\LibreWolf", LocalAppData "\LibreWolf"]
 
 PrepRegistry:
-RegRead, null, %RegKey%
-If !ErrorLevel {
-	RegRead, null, %RegKey%.pbak
-	If !ErrorLevel {
+RegKeyFound := False
+BackupKeyFound := False
+
+Loop, Reg, %RegKey%, K
+	RegKeyFound := True
+If RegKeyFound {
+	Loop, Reg, %RegKey%.pbak, K
+		BackupKeyFound := True
+	If BackupKeyFound {
 		MsgBox, 54, %_Title%, %_BackupKeyFound%`n%RegKey%`n%_BackupFoundActions%
 		IfMsgBox Cancel
 			Exit
 		IfMsgBox TryAgain
 			Goto, PrepRegistry
 	} Else
-		RunWait, reg copy %RegKey% %RegKey%.pbak /s /f
+		RunWait, reg copy %RegKey% %RegKey%.pbak /s /f,, Hide
 	RegDelete, %RegKey%
-}
-
-For i, Folder in Folders {
-PrepFolder:
-	If FileExist(Folder) {
-		If FileExist(Folder ".pbak") {
-			MsgBox, 54, %_Title%, %_BackupFolderFound%`n%Folder%`n%_BackupFoundActions%
-			IfMsgBox Cancel
-				Exit
-			IfMsgBox TryAgain
-				Goto, PrepFolder
-			IfMsgBox Continue
-				FileRemoveDir, %Folder%, 1
-		} Else
-			FileMoveDir, %Folder%, %Folder%.pbak, 2
-	}
 }
 
 ; Skip path adjustment if profile path hasn't changed since last run
@@ -210,24 +197,19 @@ For Process in ComObjGet("winmgmts:").ExecQuery("Select ProcessId from Win32_Pro
 If StillRunning
 	Goto, WaitClose
 
-; Restore registry and folders
+; Restore backed up registry key
 RegDelete, %RegKey%
-RegRead, null, %RegKey%.pbak
-If !ErrorLevel {
-	RunWait, reg copy %RegKey%.pbak %RegKey% /s /f
+If RegKeyFound {
+	RunWait, reg copy %RegKey%.pbak %RegKey% /s /f,, Hide
 	RegDelete, %RegKey%.pbak
 }
 
-For i, Folder in Folders {
-	If FileExist(Folder)
-		FileRemoveDir, %Folder%, 1
-	If FileExist(Folder ".pbak")
-		FileMoveDir, %Folder%.pbak, %Folder%, 2
-}
+; Remove AppData and Temp folders if empty
+Folders := [ A_AppData "\LibreWolf\Extensions", A_AppData "\LibreWolf", LocalAppData "\LibreWolf", "mozilla-temp-files" ]
+For i, Folder in Folders
+	FileRemoveDir, %Folder%
 
 ; Clean-up
 Exit:
-If !PortableRunning {
+If !PortableRunning
 	FileDelete, *jsonlz4.exe
-	FileRemoveDir, mozilla-temp-files
-}
