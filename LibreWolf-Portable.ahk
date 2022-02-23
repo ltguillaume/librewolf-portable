@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://github.com/ltGuillaume/LibreWolf-Portable
-;@Ahk2Exe-SetFileVersion 1.1.0
+;@Ahk2Exe-SetFileVersion 1.1.1
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf Portable
@@ -35,7 +35,7 @@ OnExit, Exit
 FileGetVersion, PortableVersion, %A_ScriptFullPath%
 PortableVersion := SubStr(PortableVersion, 1, -2)
 SetWorkingDir, %Temp%
-Menu, Tray, Tip, %_Title% %UpdaterVersion%
+Menu, Tray, Tip, %_Title% %PortableVersion%
 If !A_IsCompiled
 	Menu, Tray, Icon, %A_ScriptDir%\LibreWolf-Portable.ico
 
