@@ -12,6 +12,7 @@ An attempt to make LibreWolf for Windows fully portable: allow changing paths an
 ## Getting started
 - [Download](https://gitlab.com/librewolf-community/browser/windows/-/releases) and extract the LibreWolf portable zip-file
 - Replace the existing `LibreWolf-Portable.exe` with the one downloaded from here
+- Put [`LibreWolf-WinUpdater.exe`](https://github.com/ltGuillaume/LibreWolf-WinUpdater) in the same folder and the program will check for updates upon start (max. once a day).
 
 ## Credits
 * Icon by the [LibreWolf Community](https://gitlab.com/librewolf-community/branding/-/tree/master/icon)
