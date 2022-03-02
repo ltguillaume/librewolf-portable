@@ -35,8 +35,13 @@ FileGetVersion, PortableVersion, %A_ScriptFullPath%
 PortableVersion := SubStr(PortableVersion, 1, -2)
 SetWorkingDir, %Temp%
 Menu, Tray, Tip, %_Title% %PortableVersion%
-If !A_IsCompiled
-	Menu, Tray, Icon, %A_ScriptDir%\LibreWolf-Portable.ico
+Menu, Tray, NoStandard
+Menu, Tray, Add, &About, About
+Menu, Tray, Add, E&xit, Exit
+
+About() {
+	Run, https://github.com/ltGuillaume/LibreWolf-Portable
+}
 
 ; Check for running LibreWolf-Portable processes
 DetectHiddenWindows, On
