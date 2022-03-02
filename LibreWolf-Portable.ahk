@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://github.com/ltGuillaume/LibreWolf-Portable
-;@Ahk2Exe-SetFileVersion 1.2.0
+;@Ahk2Exe-SetFileVersion 1.3.0
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf Portable
@@ -59,7 +59,7 @@ WinUpdater := A_ScriptDir "\LibreWolf-WinUpdater"
 If FileExist(WinUpdater ".exe") {
 	If FileExist(WinUpdater ".ini")
 		FileGetTime, LastUpdate, %WinUpdater%.ini
-	If !LastUpdate Or SubStr(LastUpdate, 1, 8) < SubStr(A_Now, 1, 8)
+	If (!LastUpdate Or SubStr(LastUpdate, 1, 8) < SubStr(A_Now, 1, 8))
 		RunWait, %WinUpdater%.exe
 }
 
@@ -102,16 +102,13 @@ If RegKeyFound {
 ; Skip path adjustment if profile path hasn't changed since last run
 If FileExist(LastPathFile) {
 	FileRead, LastPath, %LastPathFile%
-	If LastPath = %ProfilePath%
+	If (LastPath = ProfilePath)
 		Goto, Run
 } Else
 	FileAppend, %ProfilePath%, %LastPathFile%
 ;MsgBox, Time to adjust the absolute profile path
 
 ; Adjust absolute profile folder paths to current path
-FileInstall, dejsonlz4.exe, %Temp%\dejsonlz4.exe, 0
-FileInstall, jsonlz4.exe, %Temp%\jsonlz4.exe, 0
-
 ProgramPathDS := StrReplace(ProgramPath, "\", "\\")
 VarSetCapacity(ProgramPathUri, 300*2)
 DllCall("shlwapi\UrlCreateFromPath" "W", "Str", ProgramPath, "Str", ProgramPathUri, "UInt*", 300, "UInt", 0)
@@ -120,12 +117,16 @@ VarSetCapacity(ProfilePathUri, 300*2)
 DllCall("shlwapi\UrlCreateFromPath" "W", "Str", ProfilePath, "Str", ProfilePathUri, "UInt*", 300, "UInt", 0)
 
 If FileExist(ProfilePath "\addonStartup.json.lz4") {
+	FileInstall, dejsonlz4.exe, dejsonlz4.exe, 0
+	FileInstall, jsonlz4.exe, jsonlz4.exe, 0
+
 	RunWait, dejsonlz4.exe "%ProfilePath%\addonStartup.json.lz4" "%ProfilePath%\addonStartup.json",, Hide
 	If ReplacePaths(ProfilePath "\addonStartup.json")
 		RunWait, jsonlz4.exe "%ProfilePath%\addonStartup.json" "%ProfilePath%\addonStartup.json.lz4",, Hide
 	FileDelete, %ProfilePath%\addonStartup.json
 }
 
+ReplacePaths(A_ScriptDir "\LibreWolf\librewolf.cfg")
 ReplacePaths(ProfilePath "\extensions.json")
 ReplacePaths(ProfilePath "\prefs.js")
 
@@ -142,13 +143,14 @@ ReplacePaths(FilePath) {
 	}		
 	FileOrg := File
 
-; Won't work, because LibreWolf resets the value for autoadmin.global_config_url on start-up
-;	If FilePath = %ProfilePath%\prefs.js
-;		File := RegExReplace(File, "i)(, "")[^""]+?(\Qlibrewolf.overrides.cfg""\E)", "$1" ProfilePathUri "/$2")
-	File := RegExReplace(File, "i).:\\[^""]+?(\Q\\browser\\features\E)", ProgramPathDS "$1")
-	File := RegExReplace(File, "i)file:\/\/\/[^""]+?(\Q/browser/features\E)", ProgramPathUri "$1")
-	File := RegExReplace(File, "i).:\\[^""]+?(\Q\\extensions\E)", ProfilePathDS "$1")
-	File := RegExReplace(File, "i)file:\/\/\/[^""]+?(\Q/extensions\E)", ProfilePathUri "$1")
+	If (FilePath = A_ScriptDir "\LibreWolf\librewolf.cfg")
+		File := RegExReplace(File, "i)(, ``)[^``]+?(\Qlibrewolf.overrides.cfg\E)", "$1" ProfilePathUri "/$2")
+	Else {
+		File := RegExReplace(File, "i).:\\[^""]+?(\Q\\browser\\features\E)", ProgramPathDS "$1")
+		File := RegExReplace(File, "i)file:\/\/\/[^""]+?(\Q/browser/features\E)", ProgramPathUri "$1")
+		File := RegExReplace(File, "i).:\\[^""]+?(\Q\\extensions\E)", ProfilePathDS "$1")
+		File := RegExReplace(File, "i)file:\/\/\/[^""]+?(\Q/extensions\E)", ProfilePathUri "$1")
+	}
 
 	If (File = FileOrg)
 		Return False
