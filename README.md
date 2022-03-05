@@ -13,7 +13,6 @@ An attempt to make LibreWolf for Windows fully portable: allow changing paths an
 - Download and extract [`librewolf-xx.x.en-US.win64.portable.zip`](https://gitlab.com/librewolf-community/browser/windows/-/releases). It contains this project (but it might not have the latest version, so compare the file version with the latest release here).
 - Optionally, put [`LibreWolf-WinUpdater.exe`](https://github.com/ltGuillaume/LibreWolf-WinUpdater/releases) in the same folder to automatically download updates upon start (max. once a day).
 - If you need a portable [`librewolf.overrides.cfg`](https://librewolf.net/docs/settings/#where-do-i-find-my-librewolfoverridescfg), you can put it inside the profile folder `Profiles\Default`.  
-If you're updating to v1.3.0 or higher, [see these notes](https://github.com/ltGuillaume/LibreWolf-Portable/releases/tag/1.3.0).  
 LibreWolf Portable will _not_ use `%USERPROFILE%\.librewolf\librewolf.overrides.cfg`.
 
 ## Credits

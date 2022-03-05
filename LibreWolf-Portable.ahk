@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://github.com/ltGuillaume/LibreWolf-Portable
-;@Ahk2Exe-SetFileVersion 1.3.0
+;@Ahk2Exe-SetFileVersion 1.3.1
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf Portable
@@ -99,16 +99,7 @@ If RegKeyFound {
 	RegDelete, %RegKey%
 }
 
-; Skip path adjustment if profile path hasn't changed since last run
-If FileExist(LastPathFile) {
-	FileRead, LastPath, %LastPathFile%
-	If (LastPath = ProfilePath)
-		Goto, Run
-} Else
-	FileAppend, %ProfilePath%, %LastPathFile%
-;MsgBox, Time to adjust the absolute profile path
-
-; Adjust absolute profile folder paths to current path
+; Adjust absolute folder paths to current path
 ProgramPathDS := StrReplace(ProgramPath, "\", "\\")
 VarSetCapacity(ProgramPathUri, 300*2)
 DllCall("shlwapi\UrlCreateFromPath" "W", "Str", ProgramPath, "Str", ProgramPathUri, "UInt*", 300, "UInt", 0)
@@ -116,6 +107,16 @@ ProfilePathDS := StrReplace(ProfilePath, "\", "\\")
 VarSetCapacity(ProfilePathUri, 300*2)
 DllCall("shlwapi\UrlCreateFromPath" "W", "Str", ProfilePath, "Str", ProfilePathUri, "UInt*", 300, "UInt", 0)
 
+ReplacePaths(A_ScriptDir "\LibreWolf\librewolf.cfg")
+
+; Skip path adjustment if profile path hasn't changed since last run
+If FileExist(LastPathFile) {
+	FileRead, LastPath, %LastPathFile%
+	If (LastPath = ProfilePath)
+		Goto, Run
+}
+
+;MsgBox, Time to adjust the absolute paths in your profile
 If FileExist(ProfilePath "\addonStartup.json.lz4") {
 	FileInstall, dejsonlz4.exe, dejsonlz4.exe, 0
 	FileInstall, jsonlz4.exe, jsonlz4.exe, 0
@@ -126,7 +127,6 @@ If FileExist(ProfilePath "\addonStartup.json.lz4") {
 	FileDelete, %ProfilePath%\addonStartup.json
 }
 
-ReplacePaths(A_ScriptDir "\LibreWolf\librewolf.cfg")
 ReplacePaths(ProfilePath "\extensions.json")
 ReplacePaths(ProfilePath "\prefs.js")
 
