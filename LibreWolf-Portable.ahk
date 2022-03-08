@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://github.com/ltGuillaume/LibreWolf-Portable
-;@Ahk2Exe-SetFileVersion 1.3.1
+;@Ahk2Exe-SetFileVersion 1.3.2
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf Portable
@@ -56,9 +56,8 @@ Loop, %Self%
 
 ; Check for updates (once a day) if LibreWolf-WinUpdater is found
 WinUpdater := A_ScriptDir "\LibreWolf-WinUpdater"
-If FileExist(WinUpdater ".exe") {
-	If FileExist(WinUpdater ".ini")
-		FileGetTime, LastUpdate, %WinUpdater%.ini
+If (FileExist(WinUpdater ".exe") And FileExist(WinUpdater ".ini")) {
+	FileGetTime, LastUpdate, %WinUpdater%.ini
 	If (!LastUpdate Or SubStr(LastUpdate, 1, 8) < SubStr(A_Now, 1, 8))
 		RunWait, %WinUpdater%.exe
 }
@@ -99,24 +98,23 @@ If RegKeyFound {
 	RegDelete, %RegKey%
 }
 
-; Adjust absolute folder paths to current path
-ProgramPathDS := StrReplace(ProgramPath, "\", "\\")
-VarSetCapacity(ProgramPathUri, 300*2)
-DllCall("shlwapi\UrlCreateFromPath" "W", "Str", ProgramPath, "Str", ProgramPathUri, "UInt*", 300, "UInt", 0)
-ProfilePathDS := StrReplace(ProfilePath, "\", "\\")
-VarSetCapacity(ProfilePathUri, 300*2)
-DllCall("shlwapi\UrlCreateFromPath" "W", "Str", ProfilePath, "Str", ProfilePathUri, "UInt*", 300, "UInt", 0)
-
-ReplacePaths(A_ScriptDir "\LibreWolf\librewolf.cfg")
-
 ; Skip path adjustment if profile path hasn't changed since last run
 If FileExist(LastPathFile) {
 	FileRead, LastPath, %LastPathFile%
 	If (LastPath = ProfilePath)
 		Goto, Run
 }
+;MsgBox, Time to adjust the absolute profile path
 
-;MsgBox, Time to adjust the absolute paths in your profile
+; Adjust absolute profile folder paths to current path
+ProgramPathDS := StrReplace(ProgramPath, "\", "\\")
+VarSetCapacity(ProgramPathUri, 300*2)
+DllCall("shlwapi\UrlCreateFromPath" "W", "Str", ProgramPath, "Str", ProgramPathUri, "UInt*", 300, "UInt", 0)
+ProfilePathDS := StrReplace(ProfilePath, "\", "\\")
+VarSetCapacity(ProfilePathUri, 300*2)
+DllCall("shlwapi\UrlCreateFromPath" "W", "Str", ProfilePath, "Str", ProfilePathUri, "UInt*", 300, "UInt", 0)
+OverridesPath := "user_pref(""autoadmin.global_config_url"", """ ProfilePathUri "/librewolf.overrides.cfg"");"
+
 If FileExist(ProfilePath "\addonStartup.json.lz4") {
 	FileInstall, dejsonlz4.exe, dejsonlz4.exe, 0
 	FileInstall, jsonlz4.exe, jsonlz4.exe, 0
@@ -131,10 +129,13 @@ ReplacePaths(ProfilePath "\extensions.json")
 ReplacePaths(ProfilePath "\prefs.js")
 
 ReplacePaths(FilePath) {
-	Global ProgramPathDS, ProgramPathUri, ProfilePath, ProfilePathDS, ProfilePathUri
+	Local File, FileOrg	; Assume-global mode
 
-	If !FileExist(FilePath)
+	If !FileExist(FilePath) {
+		If (FilePath = ProfilePath "\prefs.js")
+			FileAppend, %OverridesPath%, %FilePath%
 		Return
+	}
 
 	FileRead, File, %FilePath%
 	If Errorlevel {
@@ -143,14 +144,16 @@ ReplacePaths(FilePath) {
 	}		
 	FileOrg := File
 
-	If (FilePath = A_ScriptDir "\LibreWolf\librewolf.cfg")
-		File := RegExReplace(File, "i)(, ``)[^``]+?(\Qlibrewolf.overrides.cfg\E)", "$1" ProfilePathUri "/$2")
-	Else {
-		File := RegExReplace(File, "i).:\\[^""]+?(\Q\\browser\\features\E)", ProgramPathDS "$1")
-		File := RegExReplace(File, "i)file:\/\/\/[^""]+?(\Q/browser/features\E)", ProgramPathUri "$1")
-		File := RegExReplace(File, "i).:\\[^""]+?(\Q\\extensions\E)", ProfilePathDS "$1")
-		File := RegExReplace(File, "i)file:\/\/\/[^""]+?(\Q/extensions\E)", ProfilePathUri "$1")
+	If (FilePath = ProfilePath "\prefs.js") {
+		File := RegExReplace(File, "i)(, "")[^""]+?(\Qlibrewolf.overrides.cfg""\E)", "$1" ProfilePathUri "/$2", Count)
+;MsgBox, librewolf.overrides.cfg path was replaced %Count% times
+		If (Count = 0)
+			File .= OverridesPath
 	}
+	File := RegExReplace(File, "i).:\\[^""]+?(\Q\\browser\\features\E)", ProgramPathDS "$1")
+	File := RegExReplace(File, "i)file:\/\/\/[^""]+?(\Q/browser/features\E)", ProgramPathUri "$1")
+	File := RegExReplace(File, "i).:\\[^""]+?(\Q\\extensions\E)", ProfilePathDS "$1")
+	File := RegExReplace(File, "i)file:\/\/\/[^""]+?(\Q/extensions\E)", ProfilePathUri "$1")
 
 	If (File = FileOrg)
 		Return False
@@ -193,16 +196,11 @@ For Process in ComObjGet("winmgmts:").ExecQuery("Select ProcessId from Win32_Pro
 		oUser := ComObject(0x400C, &User)	; VT_BYREF
 		Process.GetOwner(oUser)
 ;MsgBox, % oUser[]
-		If (oUser[] = A_UserName) {
-			StillRunning := True
-			Break
-		}
+		If (oUser[] = A_UserName)
+			Goto, WaitClose
 	} Catch e
 		Goto, WaitClose
 }
-
-If StillRunning
-	Goto, WaitClose
 
 ; Restore backed up registry key
 RegDelete, %RegKey%
