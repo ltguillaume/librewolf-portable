@@ -12,7 +12,6 @@
 ProgramPath       := A_ScriptDir "\LibreWolf"
 ExeFile           := ProgramPath "\librewolf.exe"
 ProfilePath       := A_ScriptDir "\Profiles\Default"
-LastPathFile      := ProfilePath "\.portable-lastpath"
 PortableRunning   := False
 
 ; Strings
@@ -99,14 +98,18 @@ If RegKeyFound {
 }
 
 ; Skip path adjustment if profile path hasn't changed since last run
-If FileExist(LastPathFile) {
-	FileRead, LastPath, %LastPathFile%
-	If (LastPath = ProfilePath)
-		Goto, Run
+If FileExist(ProfilePath "\.portable-lastpath") {	; Compatibility for older versions
+	FileDelete, %ProfilePath%\.portable-lastpath
+	Goto, ReplacePaths
 }
+
+IniRead, LastPlatformDir, %ProfilePath%\compatibility.ini, Compatibility, LastPlatformDir
+If (LastPlatformDir = ProgramPath)
+	Goto, Run
 ;MsgBox, Time to adjust the absolute profile path
 
 ; Adjust absolute profile folder paths to current path
+ReplacePaths:
 ProgramPathDS := StrReplace(ProgramPath, "\", "\\")
 VarSetCapacity(ProgramPathUri, 300*2)
 DllCall("shlwapi\UrlCreateFromPath" "W", "Str", ProgramPath, "Str", ProgramPathUri, "UInt*", 300, "UInt", 0)
@@ -163,10 +166,6 @@ ReplacePaths(FilePath) {
 		Return True
 	}
 }
-
-; Write current profile path to file
-FileDelete, %LastPathFile%
-FileAppend, %ProfilePath%, %LastPathFile%
 
 ; Run LibreWolf
 Run:
