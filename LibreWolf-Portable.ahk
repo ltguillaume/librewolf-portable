@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://github.com/ltGuillaume/LibreWolf-Portable
-;@Ahk2Exe-SetFileVersion 1.3.2
+;@Ahk2Exe-SetFileVersion 1.3.3
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf Portable
@@ -9,10 +9,10 @@
 ;@Ahk2Exe-PostExec ResourceHacker.exe -open "%A_WorkFileName%" -save "%A_WorkFileName%" -action delete -mask ICONGROUP`,207`, ,,,,1
 ;@Ahk2Exe-PostExec ResourceHacker.exe -open "%A_WorkFileName%" -save "%A_WorkFileName%" -action delete -mask ICONGROUP`,208`, ,,,,1
 
-ProgramPath       := A_ScriptDir "\LibreWolf"
-ExeFile           := ProgramPath "\librewolf.exe"
-ProfilePath       := A_ScriptDir "\Profiles\Default"
-PortableRunning   := False
+ProgramPath     := A_ScriptDir "\LibreWolf"
+ExeFile         := ProgramPath "\librewolf.exe"
+ProfilePath     := A_ScriptDir "\Profiles\Default"
+PortableRunning := False
 
 ; Strings
 _Title                = LibreWolf Portable
@@ -55,12 +55,15 @@ Loop, %Self%
 		Goto, Run
 	}
 
-; Check for updates (once a day) if LibreWolf-WinUpdater is found
+; Check for updates (once a day) if LibreWolf-WinUpdater is found and no arguments were passed
 WinUpdater := A_ScriptDir "\LibreWolf-WinUpdater"
-If (FileExist(WinUpdater ".exe") And FileExist(WinUpdater ".ini")) {
-	FileGetTime, LastUpdate, %WinUpdater%.ini
-	If (!LastUpdate Or SubStr(LastUpdate, 1, 8) < SubStr(A_Now, 1, 8))
-		RunWait, %WinUpdater%.exe
+If (!A_Args.Length() And FileExist(WinUpdater ".exe")) {
+	If FileExist(WinUpdater ".ini")
+		FileGetTime, LastUpdate, %WinUpdater%.ini
+	If (!LastUpdate Or SubStr(LastUpdate, 1, 8) < SubStr(A_Now, 1, 8)) {
+		Run, %WinUpdater%.exe /Portable
+		Exit
+	}
 }
 
 ; Check path to LibreWolf and profile
