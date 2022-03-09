@@ -35,11 +35,13 @@ PortableVersion := SubStr(PortableVersion, 1, -2)
 SetWorkingDir, %Temp%
 Menu, Tray, Tip, %_Title% %PortableVersion%
 Menu, Tray, NoStandard
-Menu, Tray, Add, &About, About
-Menu, Tray, Add, E&xit, Exit
+Menu, Tray, Add, Portable, About
+Menu, Tray, Add, WinUpdater, About
+Menu, Tray, Add, Exit, Exit
+Menu, Tray, Default, Portable
 
-About() {
-	Run, https://github.com/ltGuillaume/LibreWolf-Portable
+About(ItemName) {
+	Run, %A_ScriptFullPath% https://github.com/ltGuillaume/LibreWolf-%ItemName%
 }
 
 ; Check for running LibreWolf-Portable processes
