@@ -27,12 +27,11 @@ _FileReadError        = Error reading file for modification:
 ; Preparation
 #SingleInstance Off
 #NoEnv
-EnvGet, Temp, Temp
 EnvGet, LocalAppData, LocalAppData
 OnExit, Exit
 FileGetVersion, PortableVersion, %A_ScriptFullPath%
 PortableVersion := SubStr(PortableVersion, 1, -2)
-SetWorkingDir, %Temp%
+SetWorkingDir, %A_Temp%
 Menu, Tray, Tip, %_Title% %PortableVersion%
 Menu, Tray, NoStandard
 Menu, Tray, Add, Portable, About
