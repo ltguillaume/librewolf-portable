@@ -91,7 +91,7 @@ If RegKeyFound {
 	Loop, Reg, %RegKey%.pbak, K
 		BackupKeyFound := True
 	If BackupKeyFound {
-		MsgBox, 54, %_Title%, %_BackupKeyFound%`n%RegKey%`n%_BackupFoundActions%
+		MsgBox, 54, %_Title%, %_BackupKeyFound%`n%RegKey%.pbak`n%_BackupFoundActions%
 		IfMsgBox Cancel
 			Exit
 		IfMsgBox TryAgain
