@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://github.com/ltGuillaume/LibreWolf-Portable
-;@Ahk2Exe-SetFileVersion 1.3.3
+;@Ahk2Exe-SetFileVersion 1.3.4
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf Portable
@@ -16,6 +16,7 @@ PortableRunning := False
 
 ; Strings
 _Title                = LibreWolf Portable
+_NoDefaultBrowser     = Could not open your default browser.
 _GetProgramPathError  = Could not find the path to LibreWolf:`n%ProgramPath%
 _GetProfilePathError  = Could not find the path to the profile folder:`n%ProfilePath%`nIf this is the first time you are running LibreWolf Portable, you can ignore this. Continue?
 _BackupKeyFound       = A backup registry key has been found:
@@ -40,7 +41,15 @@ Menu, Tray, Add, Exit, Exit
 Menu, Tray, Default, Portable
 
 About(ItemName) {
-	Run, %A_ScriptFullPath% https://github.com/ltGuillaume/LibreWolf-%ItemName%
+	Url = https://github.com/ltGuillaume/LibreWolf-%ItemName%
+	Try Run, %Url%
+	Catch {
+		RegRead, DefBrowser, HKCR, .html
+		RegRead, DefBrowser, HKCR, %DefBrowser%\Shell\Open\Command
+		Run, % StrReplace(DefBrowser, "%1", Url)
+		If ErrorLevel
+		MsgBox, 48, %_Title%, %_NoDefaultBrowser%
+	}
 }
 
 ; Check for running LibreWolf-Portable processes
