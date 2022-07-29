@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://github.com/ltGuillaume/LibreWolf-Portable
-;@Ahk2Exe-SetFileVersion 1.3.4
+;@Ahk2Exe-SetFileVersion 1.3.5
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf Portable
@@ -141,21 +141,22 @@ If FileExist(ProfilePath "\addonStartup.json.lz4") {
 	FileDelete, %ProfilePath%\addonStartup.json
 }
 
-ReplacePaths(ProfilePath "\extensions.json")
+If FileExist(ProfilePath "\extensions.json")
+	ReplacePaths(ProfilePath "\extensions.json")
+
 ReplacePaths(ProfilePath "\prefs.js")
 
 ReplacePaths(FilePath) {
 	Local File, FileOrg	; Assume-global mode
 
-	If !FileExist(FilePath) {
-		If (FilePath = ProfilePath "\prefs.js")
+	If (!FileExist(FilePath) And FilePath = ProfilePath "\prefs.js") {
 			FileAppend, %OverridesPath%, %FilePath%
 		Return
 	}
 
 	FileRead, File, %FilePath%
 	If Errorlevel {
-		MsgBox, 48, %_FileReadError%`n%FilePath%
+		MsgBox, 48, %_Title%, %_FileReadError%`n%FilePath%
 		Return
 	}		
 	FileOrg := File
