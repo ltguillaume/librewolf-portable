@@ -134,11 +134,14 @@ OverridesPath := "user_pref(""autoadmin.global_config_url"", """ ProfilePathUri 
 If FileExist(ProfilePath "\addonStartup.json.lz4") {
 	FileInstall, dejsonlz4.exe, dejsonlz4.exe, 0
 	FileInstall, jsonlz4.exe, jsonlz4.exe, 0
+	FileCopy, %ProfilePath%\addonStartup.json.lz4, %A_WorkingDir%
 
-	RunWait, dejsonlz4.exe "%ProfilePath%\addonStartup.json.lz4" "%ProfilePath%\addonStartup.json",, Hide
-	If ReplacePaths(ProfilePath "\addonStartup.json")
-		RunWait, jsonlz4.exe "%ProfilePath%\addonStartup.json" "%ProfilePath%\addonStartup.json.lz4",, Hide
-	FileDelete, %ProfilePath%\addonStartup.json
+	RunWait, dejsonlz4.exe addonStartup.json.lz4 addonStartup.json,, Hide
+	If ReplacePaths("addonStartup.json") {
+		RunWait, jsonlz4.exe addonStartup.json addonStartup.json.lz4,, Hide
+		FileMove, addonStartup.json.lz4, %ProfilePath%, 1
+	}
+	FileDelete, addonStartup.json
 }
 
 If FileExist(ProfilePath "\extensions.json")
