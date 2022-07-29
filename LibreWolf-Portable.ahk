@@ -29,6 +29,7 @@ _FileReadError        = Error reading file for modification:
 #SingleInstance Off
 #NoEnv
 EnvGet, LocalAppData, LocalAppData
+FileEncoding, UTF-8-RAW
 OnExit, Exit
 FileGetVersion, PortableVersion, %A_ScriptFullPath%
 PortableVersion := SubStr(PortableVersion, 1, -2)
@@ -125,10 +126,10 @@ If (LastPlatformDir = ProgramPath)
 ReplacePaths:
 ProgramPathDS := StrReplace(ProgramPath, "\", "\\")
 VarSetCapacity(ProgramPathUri, 300*2)
-DllCall("shlwapi\UrlCreateFromPath" "W", "Str", ProgramPath, "Str", ProgramPathUri, "UInt*", 300, "UInt", 0)
+DllCall("shlwapi\UrlCreateFromPathW", "Str", ProgramPath, "Str", ProgramPathUri, "UInt*", 300, "UInt", 0x00040000)	// 0x00040000 = URL_ESCAPE_AS_UTF8
 ProfilePathDS := StrReplace(ProfilePath, "\", "\\")
 VarSetCapacity(ProfilePathUri, 300*2)
-DllCall("shlwapi\UrlCreateFromPath" "W", "Str", ProfilePath, "Str", ProfilePathUri, "UInt*", 300, "UInt", 0)
+DllCall("shlwapi\UrlCreateFromPathW", "Str", ProfilePath, "Str", ProfilePathUri, "UInt*", 300, "UInt", 0x00040000)
 OverridesPath := "user_pref(""autoadmin.global_config_url"", """ ProfilePathUri "/librewolf.overrides.cfg"");"
 
 If FileExist(ProfilePath "\addonStartup.json.lz4") {
