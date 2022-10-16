@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://github.com/ltGuillaume/LibreWolf-Portable
-;@Ahk2Exe-SetFileVersion 1.3.5
+;@Ahk2Exe-SetFileVersion 1.3.6
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf Portable
@@ -12,6 +12,7 @@
 ProgramPath     := A_ScriptDir "\LibreWolf"
 ExeFile         := ProgramPath "\librewolf.exe"
 ProfilePath     := A_ScriptDir "\Profiles\Default"
+MozCommonPath   := A_AppDataCommon "\Mozilla-1de4eec8-1241-4177-a864-e594e8d1fb38"
 PortableRunning := False
 
 ; Strings
@@ -185,8 +186,22 @@ ReplacePaths(FilePath) {
 	}
 }
 
+; Get CityHash for current instance
+GetCityHash() {
+	Global RegKey, CityHash
+	Loop, Reg, %RegKey%\Firefox\Installer, K
+		CityHash := A_LoopRegName
+	If CityHash {
+		SetTimer,, Delete
+;MsgBox, CityHash = %CityHash%
+	}
+}
+
 ; Run LibreWolf
 Run:
+If !PortableRunning
+	SetTimer, GetCityHash, 1000
+
 For i, Arg in A_Args
 	Args .= " """ Arg """"
 ;MsgBox, %ExeFile% -profile "%ProfilePath%" %Args%
@@ -207,7 +222,6 @@ ExeFileDS := StrReplace(ExeFile, "\", "\\")
 ; Wait for all LibreWolf processes of current user to be closed
 WaitClose:
 Sleep, 5000
-StillRunning := False
 For Process in ComObjGet("winmgmts:").ExecQuery("Select ProcessId from Win32_Process where ExecutablePath='" ExeFileDS "'") {
    Try {
 		oUser := ComObject(0x400C, &User)	; VT_BYREF
@@ -226,8 +240,14 @@ If RegKeyFound {
 	RegDelete, %RegKey%.pbak
 }
 
+; Remove files with CityHash of this instance
+If CityHash {
+	FileDelete, %MozCommonPath%\*%CityHash%*.*
+	FileRemoveDir, %MozCommonPath%\updates\%CityHash%, 1
+}
+
 ; Remove AppData and Temp folders if empty
-Folders := [ A_AppData "\LibreWolf\Extensions", A_AppData "\LibreWolf", LocalAppData "\LibreWolf", "mozilla-temp-files" ]
+Folders := [ MozCommonPath, A_AppData "\LibreWolf\Extensions", A_AppData "\LibreWolf", LocalAppData "\LibreWolf", "mozilla-temp-files" ]
 For i, Folder in Folders
 	FileRemoveDir, %Folder%
 
