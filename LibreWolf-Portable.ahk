@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://github.com/ltGuillaume/LibreWolf-Portable
-;@Ahk2Exe-SetFileVersion 1.3.7
+;@Ahk2Exe-SetFileVersion 1.4.0
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf Portable
@@ -35,7 +35,7 @@ OnExit, Exit
 FileGetVersion, PortableVersion, %A_ScriptFullPath%
 PortableVersion := SubStr(PortableVersion, 1, -2)
 SetWorkingDir, %A_Temp%
-Menu, Tray, Tip, %_Title% %PortableVersion%
+Menu, Tray, Tip, %_Title% %PortableVersion% [%ProgramPath%]
 Menu, Tray, NoStandard
 Menu, Tray, Add, Portable, About
 Menu, Tray, Add, WinUpdater, About
@@ -202,8 +202,11 @@ Run:
 If !PortableRunning
 	SetTimer, GetCityHash, 1000
 
+If !LibreWolfRunning()
+	Args := "--new-instance"
 For i, Arg in A_Args
 	Args .= " """ Arg """"
+
 ;MsgBox, %ExeFile% -profile "%ProfilePath%" %Args%
 RunWait, %ExeFile% -profile "%ProfilePath%" %Args%,, UseErrorLevel
 
@@ -218,20 +221,11 @@ If ErrorLevel {
 If PortableRunning
 	Exit
 
-ExeFileDS := StrReplace(ExeFile, "\", "\\")
 ; Wait for all LibreWolf processes of current user to be closed
 WaitClose:
 Sleep, 5000
-For Process in ComObjGet("winmgmts:").ExecQuery("Select ProcessId from Win32_Process where ExecutablePath=""" ExeFileDS """") {
-   Try {
-		oUser := ComObject(0x400C, &User)	; VT_BYREF
-		Process.GetOwner(oUser)
-;MsgBox, % oUser[]
-		If (oUser[] = A_UserName)
-			Goto, WaitClose
-	} Catch e
-		Goto, WaitClose
-}
+While LibreWolfRunning()
+	Goto, WaitClose
 
 ; Restore backed up registry key
 RegDelete, %RegKey%
@@ -255,3 +249,19 @@ For i, Folder in Folders
 Exit:
 If !PortableRunning
 	FileDelete, *jsonlz4.exe
+
+
+LibreWolfRunning() {
+	Global ExeFile
+	For Process in ComObjGet("winmgmts:").ExecQuery("Select ProcessId from Win32_Process where ExecutablePath=""" StrReplace(ExeFile, "\", "\\") """") {
+		 Try {
+			oUser := ComObject(0x400C, &User)	; VT_BYREF
+			Process.GetOwner(oUser)
+;MsgBox, % oUser[]
+			If (oUser[] = A_UserName)
+				Return True
+		} Catch e
+			Return True
+	}
+	Return False
+}

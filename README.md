@@ -7,7 +7,11 @@
 [LibreWolf Portable](https://github.com/ltGuillaume/LibreWolf-Portable) by ltGuillaume  
 [LibreWolf](https://librewolf.net) by [ohfp](https://gitlab.com/ohfp), [stanzabird](https://stanzabird.nl), [fxbrit](https://gitlab.com/fxbrit), [maltejur](https://gitlab.com/maltejur), [bgstack15](https://bgstack15.wordpress.com) et al.
 
-This is the portable launcher that's bundled with LibreWolf. It allows for changing paths (so you can put it on removable storage) and will clean up remnants on the system after closing the browser. The portable version and an installed instance of LibreWolf can be run simultaneously.
+This is the portable launcher that's bundled with LibreWolf. It allows for changing paths (so you can put it on removable storage) and will clean up remnants on the system after closing the browser.
+
+- Multiple portable versions can be run simultaneously
+- Portable versions can also be run together with an installed LibreWolf instance
+- Passing command line arguments to a portable instance via `LibreWolf-Portable.exe` is only possible when that portable version is not yet running
 
 ## Getting started
 - Download and extract [`librewolf-xx.x.en-US.win64.portable.zip`](https://gitlab.com/librewolf-community/browser/windows/-/releases). It already contains a compiled version of the project hosted here.
