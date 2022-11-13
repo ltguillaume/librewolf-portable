@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://github.com/ltGuillaume/LibreWolf-Portable
-;@Ahk2Exe-SetFileVersion 1.3.6
+;@Ahk2Exe-SetFileVersion 1.3.7
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf Portable
@@ -222,7 +222,7 @@ ExeFileDS := StrReplace(ExeFile, "\", "\\")
 ; Wait for all LibreWolf processes of current user to be closed
 WaitClose:
 Sleep, 5000
-For Process in ComObjGet("winmgmts:").ExecQuery("Select ProcessId from Win32_Process where ExecutablePath='" ExeFileDS "'") {
+For Process in ComObjGet("winmgmts:").ExecQuery("Select ProcessId from Win32_Process where ExecutablePath=""" ExeFileDS """") {
    Try {
 		oUser := ComObject(0x400C, &User)	; VT_BYREF
 		Process.GetOwner(oUser)
