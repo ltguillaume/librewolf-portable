@@ -1,10 +1,10 @@
 ; LibreWolf Portable - https://github.com/ltGuillaume/LibreWolf-Portable
-;@Ahk2Exe-SetFileVersion 1.4.0
+;@Ahk2Exe-SetFileVersion 1.4.1
 
 ;@Ahk2Exe-Bin Unicode 64*
+;@Ahk2Exe-SetCompanyName LibreWolf Community
 ;@Ahk2Exe-SetDescription LibreWolf Portable
 ;@Ahk2Exe-SetMainIcon LibreWolf-Portable.ico
-;@Ahk2Exe-SetOrigFilename LibreWolf-Portable.exe
 ;@Ahk2Exe-PostExec ResourceHacker.exe -open "%A_WorkFileName%" -save "%A_WorkFileName%" -action delete -mask ICONGROUP`,160`, ,,,,1
 ;@Ahk2Exe-PostExec ResourceHacker.exe -open "%A_WorkFileName%" -save "%A_WorkFileName%" -action delete -mask ICONGROUP`,206`, ,,,,1
 ;@Ahk2Exe-PostExec ResourceHacker.exe -open "%A_WorkFileName%" -save "%A_WorkFileName%" -action delete -mask ICONGROUP`,207`, ,,,,1
@@ -27,12 +27,12 @@ Global CityHash := False
 Global _Title            := "LibreWolf Portable"
 , _Waiting               := "Waiting for all LibreWolf processes to close..."
 , _NoDefaultBrowser      := "Could not open your default browser."
-, _GetLibreWolfPathError := "Could not find the path to LibreWolf:`n%LibreWolfPath%"
-, _GetProfilePathError   := "Could not find the path to the profile folder:`n%ProfilePath%`nIf this is the first time you are running LibreWolf Portable, you can ignore this. Continue?"
+, _GetLibreWolfPathError := "Could not find the path to LibreWolf:`n" LibreWolfPath
+, _GetProfilePathError   := "Could not find the path to the profile folder:`n" ProfilePath "`nIf this is the first time you are running LibreWolf Portable, you can ignore this. Continue?"
 , _BackupKeyFound        := "A backup registry key has been found:"
 , _BackupFoundActions    := "This means LibreWolf Portable has probably not been closed correctly. Continue to restore the found backup key after running, or remove the backup key yourself and press Retry to back up the current key."
 , _ErrorStarting         := "LibreWolf could not be started. Exit code:"
-, _MissingDLLs           := "You probably don't have msvcp140.dll and vcruntime140.dll present on your system. Put these files in the folder %LibreWolfPath%,`nor install the Visual C++ runtime libraries via https://librewolf.net."
+, _MissingDLLs           := "You probably don't have msvcp140.dll and vcruntime140.dll present on your system. Put these files in the folder " LibreWolfPath ",`nor install the Visual C++ runtime libraries via https://librewolf.net."
 , _FileReadError         := "Error reading file for modification:"
 
 If (ThisInstanceRunning()) {
@@ -106,7 +106,7 @@ About(ItemName) {
 CheckPaths() {
 	If (!FileExist(LibreWolfExe)) {
 		MsgBox, 48, %_Title%, %_GetLibreWolfPathError%
-		Exit
+		Exit()
 	}
 
 	; Check for profile path argument
@@ -122,7 +122,7 @@ CheckPaths() {
 	If (!FileExist(ProfilePath)) {
 		MsgBox, 52, %_Title%, %_GetProfilePathError%
 		IfMsgBox No
-			Exit
+			Exit()
 		IfMsgBox Yes
 			FileCreateDir, %ProfilePath%
 	}
@@ -136,7 +136,7 @@ CheckUpdates() {
 			FileGetTime, LastUpdate, %WinUpdater%.ini
 		If (!LastUpdate Or SubStr(LastUpdate, 1, 8) < SubStr(A_Now, 1, 8)) {
 			Run, %WinUpdater%.exe /Portable
-			Exit
+			Exit()
 		}
 	}
 }
@@ -157,7 +157,7 @@ RegBackup() {
 				Return
 			MsgBox, 54, %_Title%, %_BackupKeyFound%`n%RegKey%.pbak`n%_BackupFoundActions%
 			IfMsgBox Cancel
-				Exit
+				Exit()
 			IfMsgBox TryAgain
 				Goto, PrepRegistry
 		} Else {
