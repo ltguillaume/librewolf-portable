@@ -15,7 +15,7 @@
 #SingleInstance Off
 
 Global CityHash := False
-, LibreWolfPath := A_ScriptDir "\LibreWolf"  	 
+, LibreWolfPath := A_ScriptDir "\LibreWolf"
 , LibreWolfExe  := LibreWolfPath "\librewolf.exe"
 , MozCommonPath := A_AppDataCommon "\Mozilla-1de4eec8-1241-4177-a864-e594e8d1fb38"
 , ProfilePath   := A_ScriptDir "\Profiles\Default"

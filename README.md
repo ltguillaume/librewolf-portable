@@ -1,11 +1,7 @@
-<a href="https://buymeacoff.ee/ltGuillaume"><img title="Donate using Buy Me a Coffee" src="https://raw.githubusercontent.com/ltGuillaume/Resources/master/buybeer.svg"></a> <a href="https://liberapay.com/ltGuillaume/donate"><img title="Donate using Liberapay" src="https://raw.githubusercontent.com/ltGuillaume/Resources/master/liberapay.svg"></a>
-
-<img src="https://raw.githubusercontent.com/ltGuillaume/LibreWolf-Portable/master/LibreWolf-Portable.ico" align="right"/>
+<img src="LibreWolf-Portable.ico" align="right">
 
 # LibreWolf Portable
-
-[LibreWolf Portable](https://github.com/ltGuillaume/LibreWolf-Portable) by ltGuillaume  
-[LibreWolf](https://librewolf.net) by [ohfp](https://gitlab.com/ohfp), [stanzabird](https://stanzabird.nl), [fxbrit](https://gitlab.com/fxbrit), [maltejur](https://gitlab.com/maltejur), [bgstack15](https://bgstack15.wordpress.com) et al.
+by ltGuillaume: [Codeberg](https://codeberg.org/ltGuillaume) | [GitHub](https://github.com/ltGuillaume) | [Buy me a beer](https://buymeacoff.ee/ltGuillaume) 🍺
 
 This is the portable launcher that's bundled with LibreWolf. It allows for changing paths (so you can put it on removable storage) and will clean up remnants on the system after closing the browser.
 
@@ -20,5 +16,6 @@ This is the portable launcher that's bundled with LibreWolf. It allows for chang
 LibreWolf Portable will _not_ use `%USERPROFILE%\.librewolf\librewolf.overrides.cfg`.
 
 ## Credits
+* [LibreWolf](https://librewolf.net) by [ohfp](https://gitlab.com/ohfp), [stanzabird](https://stanzabird.nl), [fxbrit](https://gitlab.com/fxbrit), [maltejur](https://gitlab.com/maltejur), [bgstack15](https://bgstack15.wordpress.com) et al.
 * Icon by the [LibreWolf Community](https://gitlab.com/librewolf-community/branding/-/tree/master/icon)
 * The included [dejsonlz4](https://github.com/avih/dejsonlz4/) (BSD 2-Clause "Simplified" License) and jsonlz4 are the binaries from [PortableApps.com Firefox®](https://portableapps.com/apps/internet/firefox_portable) (GPLv2)
