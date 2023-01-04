@@ -315,6 +315,9 @@ CleanUp() {
 	For i, Folder in Folders
 		FileRemoveDir, %Folder%
 
+	; Remove Start menu shortcut
+	FileDelete, %A_AppData%\Microsoft\Windows\Start Menu\Programs\{-brand-shortcut-name} Private Browsing.lnk
+
 	; Clean-up
 	FileDelete, *jsonlz4.exe
 
