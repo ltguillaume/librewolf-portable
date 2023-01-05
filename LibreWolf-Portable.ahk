@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://github.com/ltGuillaume/LibreWolf-Portable
-;@Ahk2Exe-SetFileVersion 1.3.7
+;@Ahk2Exe-SetFileVersion 1.3.8
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf Portable
@@ -250,6 +250,9 @@ If CityHash {
 Folders := [ MozCommonPath, A_AppData "\LibreWolf\Extensions", A_AppData "\LibreWolf", LocalAppData "\LibreWolf", "mozilla-temp-files" ]
 For i, Folder in Folders
 	FileRemoveDir, %Folder%
+
+; Remove Start menu shortcut
+FileDelete, %A_AppData%\Microsoft\Windows\Start Menu\Programs\{-brand-shortcut-name} Private Browsing.lnk
 
 ; Clean-up
 Exit:
