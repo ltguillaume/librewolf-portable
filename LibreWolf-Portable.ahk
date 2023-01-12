@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://github.com/ltGuillaume/LibreWolf-Portable
-;@Ahk2Exe-SetFileVersion 1.4.2
+;@Ahk2Exe-SetFileVersion 1.4.3
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -36,33 +36,36 @@ Global _Title            := "LibreWolf Portable"
 , _MissingDLLs           := "You probably don't have msvcp140.dll and vcruntime140.dll present on your system. Put these files in the folder " LibreWolfPath ",`nor install the Visual C++ runtime libraries via https://librewolf.net."
 , _FileReadError         := "Error reading file for modification:"
 
-If (ThisInstanceRunning()) {
-	RunLibreWolf()
-	Exit()
-}
 Init()
 CheckPaths()
 CheckArgs()
+If (ThisLauncherRunning()) {
+	RunLibreWolf()
+	Exit()
+}
 CheckUpdates()
 RegBackup()
 UpdateProfile()
 RunLibreWolf()
 SetTimer, WaitForClose, 5000
 
-OtherInstanceRunning() {
-	Result := InstanceRunning("Name=""LibreWolf-Portable.exe""")
-;MsgBox, OtherInstanceRunning: %Result%
+DSlash(Path) {
+	Return StrReplace(Path, "\", "\\")
+}
+
+OtherLauncherRunning() {
+	Result := LauncherRunning("Name=""LibreWolf-Portable.exe"" and ExecutablePath<>""" DSlash(A_ScriptFullPath) """")
+;MsgBox, OtherLauncherRunning: %Result%
 	Return %Result%
 }
 
-ThisInstanceRunning() {
-	ScriptPathDS := StrReplace(A_ScriptFullPath, "\", "\\")
-	Result := InstanceRunning("ExecutablePath=""" ScriptPathDS """")
-;MsgBox, ThisInstanceRunning: %Result%
+ThisLauncherRunning() {
+	Result := LauncherRunning("ExecutablePath=""" DSlash(A_ScriptFullPath) """")
+;MsgBox, ThisLauncherRunning: %Result%
 	Return %Result%
 }
 
-InstanceRunning(Where) {
+LauncherRunning(Where) {
 	Process, Exist	; Put launcher's process id into ErrorLevel
 	Query := "Select ProcessId from Win32_Process where ProcessId!=" ErrorLevel " and " Where
 ;MsgBox, Query: %Query%
@@ -164,7 +167,7 @@ RegBackup() {
 			BackupKeyFound := True
 ;MsgBox, BackupFound: %BackupKeyFound%
 		If (BackupKeyFound) {
-			If (OtherInstanceRunning())
+			If (OtherLauncherRunning())
 				Return
 			MsgBox, 54, %_Title%, %_BackupKeyFound%`n%RegKey%.pbak`n%_BackupFoundActions%
 			IfMsgBox Cancel
@@ -186,10 +189,8 @@ UpdateProfile() {
 		Return False
 
 	; Adjust absolute profile folder paths to current path
-	LibreWolfPathDS := StrReplace(LibreWolfPath, "\", "\\")
 	VarSetCapacity(LibreWolfPathUri, 300*2)
 	DllCall("shlwapi\UrlCreateFromPathW", "Str", LibreWolfPath, "Str", LibreWolfPathUri, "UInt*", 300, "UInt", 0x00040000)	// 0x00040000 = URL_ESCAPE_AS_UTF8
-	ProfilePathDS := StrReplace(ProfilePath, "\", "\\")
 	VarSetCapacity(ProfilePathUri, 300*2)
 	DllCall("shlwapi\UrlCreateFromPathW", "Str", ProfilePath, "Str", ProfilePathUri, "UInt*", 300, "UInt", 0x00040000)
 	OverridesPath := "user_pref(""autoadmin.global_config_url"", """ ProfilePathUri "/librewolf.overrides.cfg"");"
@@ -232,9 +233,9 @@ ReplacePaths(FilePath) {
 		If (Count = 0)
 			File .= OverridesPath
 	}
-	File := RegExReplace(File, "i).:\\[^""]+?(\Q\\browser\\features\E)", LibreWolfPathDS "$1")
+	File := RegExReplace(File, "i).:\\[^""]+?(\Q\\browser\\features\E)", DSlash(LibreWolfPath) "$1")
 	File := RegExReplace(File, "i)file:\/\/\/[^""]+?(\Q/browser/features\E)", LibreWolfPathUri "$1")
-	File := RegExReplace(File, "i).:\\[^""]+?(\Q\\extensions\E)", ProfilePathDS "$1")
+	File := RegExReplace(File, "i).:\\[^""]+?(\Q\\extensions\E)", DSlash(ProfilePath) "$1")
 	File := RegExReplace(File, "i)file:\/\/\/[^""]+?(\Q/extensions\E)", ProfilePathUri "$1")
 
 	If (File = FileOrg)
@@ -247,11 +248,11 @@ ReplacePaths(FilePath) {
 }
 
 RunLibreWolf() {
-	If (!ThisInstanceRunning) {
+	If (!ThisLauncherRunning)
 		SetTimer, GetCityHash, 1000
-		If (LibreWolfRunning())
-			Args := "--new-instance " Args
-	}
+
+	If (LibreWolfRunning() And !ThisLibreWolfRunning())
+		Args := "--new-instance " Args
 
 ;MsgBox, %LibreWolfExe% -profile "%ProfilePath%" %Args%
 	RunWait, %LibreWolfExe% -Profile "%ProfilePath%" %Args%,, UseErrorLevel
@@ -280,8 +281,14 @@ WaitForClose() {
 	SetTimer, CleanUp, 2000
 }
 
-LibreWolfRunning() {
-	For Process in ComObjGet("winmgmts:").ExecQuery("Select ProcessId from Win32_Process where Name=""librewolf.exe""") {
+ThisLibreWolfRunning() {
+	Result := LibreWolfRunning(" and ExecutablePath=""" DSlash(LibreWolfExe) """")
+;MsgBox, ThisLibreWolfRunning: %Result%
+	Return %Result%
+}
+
+LibreWolfRunning(Where := "") {
+	For Process in ComObjGet("winmgmts:").ExecQuery("Select ProcessId from Win32_Process where Name=""librewolf.exe"" " Where) {
 		 Try {
 			oUser := ComObject(0x400C, &User)	; VT_BYREF
 			Process.GetOwner(oUser)
@@ -295,19 +302,19 @@ LibreWolfRunning() {
 }
 
 CleanUp() {
-	; Wait until all instances are closed before restoring backed up registry key
-	If (RegBackedUp And OtherInstanceRunning())
+	; Wait until all launcher instances are closed before restoring backed up registry key
+	If (RegBackedUp And OtherLauncherRunning())
 		Return
 
 	SetTimer,, Delete
 
-	; Remove files with CityHash of this instance
+	; Remove files with CityHash of this LibreWolf instance
 	If (CityHash) {
 		FileDelete, %MozCommonPath%\*%CityHash%*.*
 		FileRemoveDir, %MozCommonPath%\updates\%CityHash%, 1
 	}
 
-	If (OtherInstanceRunning())
+	If (OtherLauncherRunning())
 		Exit()
 
 	; Restore backed up registry key
