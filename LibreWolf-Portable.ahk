@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://github.com/ltGuillaume/LibreWolf-Portable
-;@Ahk2Exe-SetFileVersion 1.4.1
+;@Ahk2Exe-SetFileVersion 1.4.2
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -14,7 +14,8 @@
 #Persistent
 #SingleInstance Off
 
-Global CityHash := False
+Global Args     := ""
+, CityHash      := False
 , LibreWolfPath := A_ScriptDir "\LibreWolf"
 , LibreWolfExe  := LibreWolfPath "\librewolf.exe"
 , MozCommonPath := A_AppDataCommon "\Mozilla-1de4eec8-1241-4177-a864-e594e8d1fb38"
@@ -41,6 +42,7 @@ If (ThisInstanceRunning()) {
 }
 Init()
 CheckPaths()
+CheckArgs()
 CheckUpdates()
 RegBackup()
 UpdateProfile()
@@ -92,7 +94,7 @@ Init() {
 }
 
 About(ItemName) {
-	Url = https://github.com/ltGuillaume/LibreWolf-%ItemName%
+	Url := "https://github.com/ltGuillaume/LibreWolf-" ItemName
 	Try Run, %Url%
 	Catch {
 		RegRead, DefBrowser, HKCR, .html
@@ -110,7 +112,7 @@ CheckPaths() {
 	}
 
 	; Check for profile path argument
-	If A_Args.Length() > 1
+	If (A_Args.Length() > 1)
 		For i, Arg in A_Args
 			If (A_Args[i+1] And (Arg = "-P" Or Arg = "-Profile")) {
 				NewProfilePath := A_Args[i+1]
@@ -128,14 +130,23 @@ CheckPaths() {
 	}
 }
 
-; Check for updates (once a day) if LibreWolf-WinUpdater is found and no arguments were passed
+CheckArgs() {
+	For i, Arg in A_Args
+	{
+		If (InStr(Arg, A_Space))
+			Arg := """" Arg """"
+		Args .= " " Arg
+	}
+}
+
+; Check for updates (once a day) if LibreWolf-WinUpdater is found
 CheckUpdates() {
 	WinUpdater := A_ScriptDir "\LibreWolf-WinUpdater"
-	If (!A_Args.Length() And FileExist(WinUpdater ".exe")) {
+	If (FileExist(WinUpdater ".exe")) {
 		If (FileExist(WinUpdater ".ini"))
 			FileGetTime, LastUpdate, %WinUpdater%.ini
 		If (!LastUpdate Or SubStr(LastUpdate, 1, 8) < SubStr(A_Now, 1, 8)) {
-			Run, %WinUpdater%.exe /Portable
+			Run, %WinUpdater%.exe /Portable %Args%
 			Exit()
 		}
 	}
@@ -239,11 +250,8 @@ RunLibreWolf() {
 	If (!ThisInstanceRunning) {
 		SetTimer, GetCityHash, 1000
 		If (LibreWolfRunning())
-			Args := "--new-instance"
+			Args := "--new-instance " Args
 	}
-
-	For i, Arg in A_Args
-		Args .= " """ Arg """"
 
 ;MsgBox, %LibreWolfExe% -profile "%ProfilePath%" %Args%
 	RunWait, %LibreWolfExe% -Profile "%ProfilePath%" %Args%,, UseErrorLevel
@@ -317,6 +325,7 @@ CleanUp() {
 
 	; Remove Start menu shortcut
 	FileDelete, %A_AppData%\Microsoft\Windows\Start Menu\Programs\{-brand-shortcut-name} Private Browsing.lnk
+	FileDelete, %A_AppData%\Microsoft\Windows\Start Menu\Programs\LibreWolf Private Browsing.lnk
 
 	; Clean-up
 	FileDelete, *jsonlz4.exe
