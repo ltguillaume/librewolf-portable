@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://github.com/ltGuillaume/LibreWolf-Portable
-;@Ahk2Exe-SetFileVersion 1.3.8
+;@Ahk2Exe-SetFileVersion 1.3.9
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf Portable
@@ -253,6 +253,7 @@ For i, Folder in Folders
 
 ; Remove Start menu shortcut
 FileDelete, %A_AppData%\Microsoft\Windows\Start Menu\Programs\{-brand-shortcut-name} Private Browsing.lnk
+FileDelete, %A_AppData%\Microsoft\Windows\Start Menu\Programs\LibreWolf Private Browsing.lnk
 
 ; Clean-up
 Exit:
