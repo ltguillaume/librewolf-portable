@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://github.com/ltGuillaume/LibreWolf-Portable
-;@Ahk2Exe-SetFileVersion 1.3.9
+;@Ahk2Exe-SetFileVersion 1.3.10
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf Portable
@@ -65,13 +65,20 @@ Loop, %Self%
 		Goto, Run
 	}
 
-; Check for updates (once a day) if LibreWolf-WinUpdater is found and no arguments were passed
+For i, Arg in A_Args
+{
+	If (InStr(Arg, A_Space))
+		Arg := """" Arg """"
+	Args .= " " Arg
+}
+
+; Check for updates (once a day) if LibreWolf-WinUpdater is found
 WinUpdater := A_ScriptDir "\LibreWolf-WinUpdater"
-If (!A_Args.Length() And FileExist(WinUpdater ".exe")) {
+If (FileExist(WinUpdater ".exe")) {
 	If FileExist(WinUpdater ".ini")
 		FileGetTime, LastUpdate, %WinUpdater%.ini
 	If (!LastUpdate Or SubStr(LastUpdate, 1, 8) < SubStr(A_Now, 1, 8)) {
-		Run, %WinUpdater%.exe /Portable
+		Run, %WinUpdater%.exe /Portable %Args%
 		Exit
 	}
 }
@@ -202,8 +209,6 @@ Run:
 If !PortableRunning
 	SetTimer, GetCityHash, 1000
 
-For i, Arg in A_Args
-	Args .= " """ Arg """"
 ;MsgBox, %ExeFile% -profile "%ProfilePath%" %Args%
 RunWait, %ExeFile% -profile "%ProfilePath%" %Args%,, UseErrorLevel
 
