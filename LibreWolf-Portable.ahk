@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://github.com/ltGuillaume/LibreWolf-Portable
-;@Ahk2Exe-SetFileVersion 1.4.3
+;@Ahk2Exe-SetFileVersion 1.4.4
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -20,6 +20,7 @@ Global Args     := ""
 , LibreWolfExe  := LibreWolfPath "\librewolf.exe"
 , MozCommonPath := A_AppDataCommon "\Mozilla-1de4eec8-1241-4177-a864-e594e8d1fb38"
 , ProfilePath   := A_ScriptDir "\Profiles\Default"
+, UpdaterBase   := A_ScriptDir "\LibreWolf-WinUpdater"
 , RegKey        := "HKCU\Software\LibreWolf"
 , RegKeyFound   := False
 , RegBackedUp   := False
@@ -51,35 +52,6 @@ SetTimer, WaitForClose, 5000
 
 DSlash(Path) {
 	Return StrReplace(Path, "\", "\\")
-}
-
-OtherLauncherRunning() {
-	Result := LauncherRunning("Name=""LibreWolf-Portable.exe"" and ExecutablePath<>""" DSlash(A_ScriptFullPath) """")
-;MsgBox, OtherLauncherRunning: %Result%
-	Return %Result%
-}
-
-ThisLauncherRunning() {
-	Result := LauncherRunning("ExecutablePath=""" DSlash(A_ScriptFullPath) """")
-;MsgBox, ThisLauncherRunning: %Result%
-	Return %Result%
-}
-
-LauncherRunning(Where) {
-	Process, Exist	; Put launcher's process id into ErrorLevel
-	Query := "Select ProcessId from Win32_Process where ProcessId!=" ErrorLevel " and " Where
-;MsgBox, Query: %Query%
-	For Process in ComObjGet("winmgmts:").ExecQuery(Query) {
-		 Try {
-			oUser := ComObject(0x400C, &User)	; VT_BYREF
-			Process.GetOwner(oUser)
-;MsgBox, % oUser[]
-			If (oUser[] = A_UserName)
-				Return True
-		} Catch e
-			Return True
-	}
-	Return False
 }
 
 Init() {
@@ -144,12 +116,11 @@ CheckArgs() {
 
 ; Check for updates (once a day) if LibreWolf-WinUpdater is found
 CheckUpdates() {
-	WinUpdater := A_ScriptDir "\LibreWolf-WinUpdater"
-	If (FileExist(WinUpdater ".exe")) {
-		If (FileExist(WinUpdater ".ini"))
-			FileGetTime, LastUpdate, %WinUpdater%.ini
+	If (FileExist(UpdaterBase ".exe")) {
+		If (FileExist(UpdaterBase ".ini"))
+			FileGetTime, LastUpdate, %UpdaterBase%.ini
 		If (!LastUpdate Or SubStr(LastUpdate, 1, 8) < SubStr(A_Now, 1, 8)) {
-			Run, %WinUpdater%.exe /Portable %Args%
+			Run, %UpdaterBase%.exe /Portable %Args%
 			Exit()
 		}
 	}
@@ -282,13 +253,31 @@ WaitForClose() {
 }
 
 ThisLibreWolfRunning() {
-	Result := LibreWolfRunning(" and ExecutablePath=""" DSlash(LibreWolfExe) """")
-;MsgBox, ThisLibreWolfRunning: %Result%
-	Return %Result%
+	Return LibreWolfRunning(" and ExecutablePath=""" DSlash(LibreWolfExe) """")
 }
 
 LibreWolfRunning(Where := "") {
-	For Process in ComObjGet("winmgmts:").ExecQuery("Select ProcessId from Win32_Process where Name=""librewolf.exe"" " Where) {
+	Return ProcessRunning("Name=""librewolf.exe""" Where)
+}
+
+OtherLauncherRunning() {
+	Return LauncherRunning("Name=""LibreWolf-Portable.exe"" and ExecutablePath<>""" DSlash(A_ScriptFullPath) """")
+}
+
+ThisLauncherRunning() {
+	Return LauncherRunning("ExecutablePath=""" DSlash(A_ScriptFullPath) """")
+}
+
+LauncherRunning(Where) {
+	Process, Exist	; Put launcher's process id into ErrorLevel
+	Result := ProcessRunning("ProcessId!=" ErrorLevel " and " Where)
+;MsgBox, LauncherRunning: %Result%
+	Return %Result%
+}
+
+ProcessRunning(Where := "") {
+	Query := "Select ProcessId from Win32_Process where " Where
+	For Process in ComObjGet("winmgmts:").ExecQuery(Query) {
 		 Try {
 			oUser := ComObject(0x400C, &User)	; VT_BYREF
 			Process.GetOwner(oUser)
@@ -336,6 +325,7 @@ CleanUp() {
 
 	; Clean-up
 	FileDelete, *jsonlz4.exe
+	FileDelete, %UpdaterBase%.exe.pbak
 
 	Exit()
 }
