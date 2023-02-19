@@ -1,4 +1,4 @@
-; LibreWolf Portable - https://github.com/ltGuillaume/LibreWolf-Portable
+; LibreWolf Portable - https://codeberg.org/ltGuillaume/LibreWolf-Portable
 ;@Ahk2Exe-SetFileVersion 1.3.10
 
 ;@Ahk2Exe-Bin Unicode 64*
@@ -43,7 +43,7 @@ Menu, Tray, Add, Exit, Exit
 Menu, Tray, Default, Portable
 
 About(ItemName) {
-	Url = https://github.com/ltGuillaume/LibreWolf-%ItemName%
+	Url = https://codeberg.org/ltGuillaume/LibreWolf-%ItemName%
 	Try Run, %Url%
 	Catch {
 		RegRead, DefBrowser, HKCR, .html
