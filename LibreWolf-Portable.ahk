@@ -1,4 +1,4 @@
-; LibreWolf Portable - https://github.com/ltGuillaume/LibreWolf-Portable
+; LibreWolf Portable - https://codeberg.org/ltguillaume/librewolf-portable
 ;@Ahk2Exe-SetFileVersion 1.4.4
 
 ;@Ahk2Exe-Bin Unicode 64*
@@ -69,7 +69,7 @@ Init() {
 }
 
 About(ItemName) {
-	Url := "https://github.com/ltGuillaume/LibreWolf-" ItemName
+	Url := "https://codeberg.org/ltguillaume/librewolf-" ItemName
 	Try Run, %Url%
 	Catch {
 		RegRead, DefBrowser, HKCR, .html
