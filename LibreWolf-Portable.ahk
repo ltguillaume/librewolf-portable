@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://codeberg.org/ltGuillaume/LibreWolf-Portable
-;@Ahk2Exe-SetFileVersion 1.3.10
+;@Ahk2Exe-SetFileVersion 1.3.11
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf Portable
@@ -97,7 +97,7 @@ If !FileExist(ProfilePath) {
 }
 
 ; Backup existing registry key
-RegKey  := "HKCU\Software\LibreWolf"
+RegKey := "HKCU\Software\LibreWolf"
 
 PrepRegistry:
 RegKeyFound := False
@@ -228,7 +228,8 @@ ExeFileDS := StrReplace(ExeFile, "\", "\\")
 WaitClose:
 Sleep, 5000
 For Process in ComObjGet("winmgmts:").ExecQuery("Select ProcessId from Win32_Process where ExecutablePath=""" ExeFileDS """") {
-   Try {
+	Try {
+		VarSetCapacity(User, 64)	; Request memory capacity, otherwise the Where variable got filled with random data (specifically "lf\Firefox\Installer")
 		oUser := ComObject(0x400C, &User)	; VT_BYREF
 		Process.GetOwner(oUser)
 ;MsgBox, % oUser[]
