@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://codeberg.org/ltguillaume/librewolf-portable
-;@Ahk2Exe-SetFileVersion 1.4.4
+;@Ahk2Exe-SetFileVersion 1.4.5
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -172,7 +172,7 @@ UpdateProfile() {
 		FileCopy, %ProfilePath%\addonStartup.json.lz4, %A_WorkingDir%
 
 		RunWait, dejsonlz4.exe addonStartup.json.lz4 addonStartup.json,, Hide
-		If (ReplacePaths("addonStartup.json")) {
+		If (ReplacePaths("addonStartup.json", LibreWolfPathUri, ProfilePathUri)) {
 			RunWait, jsonlz4.exe addonStartup.json addonStartup.json.lz4,, Hide
 			FileMove, addonStartup.json.lz4, %ProfilePath%, 1
 		}
@@ -180,12 +180,12 @@ UpdateProfile() {
 	}
 
 	If (FileExist(ProfilePath "\extensions.json"))
-		ReplacePaths(ProfilePath "\extensions.json")
+		ReplacePaths(ProfilePath "\extensions.json", LibreWolfPathUri, ProfilePathUri)
 
-	ReplacePaths(ProfilePath "\prefs.js")
+	ReplacePaths(ProfilePath "\prefs.js", LibreWolfPathUri, ProfilePathUri)
 }
 
-ReplacePaths(FilePath) {
+ReplacePaths(FilePath, LibreWolfPathUri, ProfilePathUri) {
 	If (!FileExist(FilePath) And FilePath = ProfilePath "\prefs.js") {
 			FileAppend, %OverridesPath%, %FilePath%
 		Return
@@ -199,7 +199,7 @@ ReplacePaths(FilePath) {
 	FileOrg := File
 
 	If (FilePath = ProfilePath "\prefs.js") {
-		File := RegExReplace(File, "i)(, "")[^""]+?(\Qlibrewolf.overrides.cfg""\E)", "$1" ProfilePathUri "/$2", Count)
+		File := RegExReplace(File, "i)(,\s*"")[^""]+?(\Qlibrewolf.overrides.cfg""\E)", "$1" ProfilePathUri "/$2", Count)
 ;MsgBox, librewolf.overrides.cfg path was replaced %Count% times
 		If (Count = 0)
 			File .= OverridesPath
@@ -212,7 +212,7 @@ ReplacePaths(FilePath) {
 	If (File = FileOrg)
 		Return False
 	Else {
-		FileMove, %FilePath%, %FilePath%.pbak, 1
+		FileMove, %FilePath%, %ProfilePath%\%FilePath%.pbak, 1
 		FileAppend, %File%, %FilePath%
 		Return True
 	}
