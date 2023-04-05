@@ -276,9 +276,11 @@ LauncherRunning(Where) {
 }
 
 ProcessRunning(Where := "") {
+;MsgBox, ProcessRunning Where:`n%Where%
 	Query := "Select ProcessId from Win32_Process where " Where
 	For Process in ComObjGet("winmgmts:").ExecQuery(Query) {
 		 Try {
+			VarSetCapacity(User, 64)	; Request memory capacity, otherwise the Where variable got filled with random data (specifically "lf\Firefox\Installer")
 			oUser := ComObject(0x400C, &User)	; VT_BYREF
 			Process.GetOwner(oUser)
 ;MsgBox, % oUser[]
