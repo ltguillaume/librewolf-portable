@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://codeberg.org/ltguillaume/librewolf-portable
-;@Ahk2Exe-SetFileVersion 1.4.5
+;@Ahk2Exe-SetFileVersion 1.4.6
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -30,7 +30,7 @@ Global _Title            := "LibreWolf Portable"
 , _Waiting               := "Waiting for all LibreWolf processes to close..."
 , _NoDefaultBrowser      := "Could not open your default browser."
 , _GetLibreWolfPathError := "Could not find the path to LibreWolf:`n" LibreWolfPath
-, _GetProfilePathError   := "Could not find the path to the profile folder:`n" ProfilePath "`nIf this is the first time you are running LibreWolf Portable, you can ignore this. Continue?"
+, _GetProfilePathError   := "Could not find the path to the profile folder:`n{ProfilePath}`nIf this is the first time you are running LibreWolf Portable, you can ignore this. Continue?"
 , _BackupKeyFound        := "A backup registry key has been found:"
 , _BackupFoundActions    := "This means LibreWolf Portable has probably not been closed correctly. Continue to restore the found backup key after running, or remove the backup key yourself and press Retry to back up the current key."
 , _ErrorStarting         := "LibreWolf could not be started. Exit code:"
@@ -41,6 +41,7 @@ Init()
 CheckPaths()
 CheckArgs()
 If (ThisLauncherRunning()) {
+	UpdateProfile()	; Still needed for -P(rofile) ...
 	RunLibreWolf()
 	Exit()
 }
@@ -97,7 +98,7 @@ CheckPaths() {
 			}
 
 	If (!FileExist(ProfilePath)) {
-		MsgBox, 52, %_Title%, %_GetProfilePathError%
+		MsgBox, 52, %_Title%, % StrReplace(_GetProfilePathError, "{ProfilePath}", ProfilePath)
 		IfMsgBox No
 			Exit()
 		IfMsgBox Yes
@@ -155,9 +156,10 @@ RegBackup() {
 
 UpdateProfile() {
 	; Skip path adjustment if profile path hasn't changed since last run
-	IniRead, LastPlatformDir, %ProfilePath%\compatibility.ini, Compatibility, LastPlatformDir
-	If (LastPlatformDir = LibreWolfPath)
-		Return False
+	; This won't work anymore with the support for multiple/custom profiles
+	;IniRead, LastPlatformDir, %ProfilePath%\compatibility.ini, Compatibility, LastPlatformDir
+	;If (LastPlatformDir = LibreWolfPath)
+	;	Return False
 
 	; Adjust absolute profile folder paths to current path
 	VarSetCapacity(LibreWolfPathUri, 300*2)
@@ -182,10 +184,10 @@ UpdateProfile() {
 	If (FileExist(ProfilePath "\extensions.json"))
 		ReplacePaths(ProfilePath "\extensions.json", LibreWolfPathUri, ProfilePathUri)
 
-	ReplacePaths(ProfilePath "\prefs.js", LibreWolfPathUri, ProfilePathUri)
+	ReplacePaths(ProfilePath "\prefs.js", LibreWolfPathUri, ProfilePathUri, OverridesPath)
 }
 
-ReplacePaths(FilePath, LibreWolfPathUri, ProfilePathUri) {
+ReplacePaths(FilePath, LibreWolfPathUri, ProfilePathUri, OverridesPath = False) {
 	If (!FileExist(FilePath) And FilePath = ProfilePath "\prefs.js") {
 			FileAppend, %OverridesPath%, %FilePath%
 		Return
