@@ -1,7 +1,8 @@
-; LibreWolf Portable - https://github.com/ltGuillaume/LibreWolf-Portable
-;@Ahk2Exe-SetFileVersion 1.3.10
+; LibreWolf Portable - https://codeberg.org/ltguillaume/librewolf-portable
+;@Ahk2Exe-SetFileVersion 1.5.0
 
-;@Ahk2Exe-Bin Unicode 64*
+;@Ahk2Exe-Base Unicode 32*
+;@Ahk2Exe-SetCompanyName LibreWolf Community
 ;@Ahk2Exe-SetDescription LibreWolf Portable
 ;@Ahk2Exe-SetMainIcon LibreWolf-Portable.ico
 ;@Ahk2Exe-PostExec ResourceHacker.exe -open "%A_WorkFileName%" -save "%A_WorkFileName%" -action delete -mask ICONGROUP`,160`, ,,,,1
@@ -9,258 +10,341 @@
 ;@Ahk2Exe-PostExec ResourceHacker.exe -open "%A_WorkFileName%" -save "%A_WorkFileName%" -action delete -mask ICONGROUP`,207`, ,,,,1
 ;@Ahk2Exe-PostExec ResourceHacker.exe -open "%A_WorkFileName%" -save "%A_WorkFileName%" -action delete -mask ICONGROUP`,208`, ,,,,1
 
-ProgramPath     := A_ScriptDir "\LibreWolf"
-ExeFile         := ProgramPath "\librewolf.exe"
-ProfilePath     := A_ScriptDir "\Profiles\Default"
-MozCommonPath   := A_AppDataCommon "\Mozilla-1de4eec8-1241-4177-a864-e594e8d1fb38"
-PortableRunning := False
+#NoEnv
+#Persistent
+#SingleInstance Off
+
+Global Args     := ""
+, CityHash      := False
+, LibreWolfPath := A_ScriptDir "\LibreWolf"
+, LibreWolfExe  := LibreWolfPath "\librewolf.exe"
+, MozCommonPath := A_AppDataCommon "\Mozilla-1de4eec8-1241-4177-a864-e594e8d1fb38"
+, ProfilePath   := A_ScriptDir "\Profiles\Default"
+, UpdaterBase   := A_ScriptDir "\LibreWolf-WinUpdater"
+, RegKey        := "HKCU\Software\LibreWolf"
+, RegKeyFound   := False
+, RegBackedUp   := False
 
 ; Strings
-_Title                = LibreWolf Portable
-_NoDefaultBrowser     = Could not open your default browser.
-_GetProgramPathError  = Could not find the path to LibreWolf:`n%ProgramPath%
-_GetProfilePathError  = Could not find the path to the profile folder:`n%ProfilePath%`nIf this is the first time you are running LibreWolf Portable, you can ignore this. Continue?
-_BackupKeyFound       = A backup registry key has been found:
-_BackupFoundActions   = This means LibreWolf Portable has probably not been closed correctly. Continue to restore the found backup key after running, or remove the backup key yourself and press Retry to back up the current key.
-_ErrorStarting        = LibreWolf could not be started. Exit code:
-_MissingDLLs          = You probably don't have msvcp140.dll and vcruntime140.dll present on your system. Put these files in the folder %ProgramPath%,`nor install the Visual C++ runtime libraries via https://librewolf.net.
-_FileReadError        = Error reading file for modification:
+Global _Title            := "LibreWolf Portable"
+, _GetBuildError         := "Could not determine the build architecture (32/64-bit) of LibreWolf."
+, _Waiting               := "Waiting for all LibreWolf processes to close..."
+, _NoDefaultBrowser      := "Could not open your default browser."
+, _GetLibreWolfPathError := "Could not find the path to LibreWolf:`n" LibreWolfPath
+, _GetProfilePathError   := "Could not find the path to the profile folder:`n{ProfilePath}`nIf this is the first time you are running LibreWolf Portable, you can ignore this. Continue?"
+, _BackupKeyFound        := "A backup registry key has been found:"
+, _BackupFoundActions    := "This means LibreWolf Portable has probably not been closed correctly. Continue to restore the found backup key after running, or remove the backup key yourself and press Retry to back up the current key."
+, _ErrorStarting         := "LibreWolf could not be started. Exit code:"
+, _MissingDLLs           := "You probably don't have msvcp140.dll and vcruntime140.dll present on your system. Put these files in the folder " LibreWolfPath ",`nor install the Visual C++ runtime libraries via https://librewolf.net."
+, _FileReadError         := "Error reading file for modification:"
 
-; Preparation
-#SingleInstance Off
-#NoEnv
-EnvGet, LocalAppData, LocalAppData
-FileEncoding, UTF-8-RAW
-OnExit, Exit
-FileGetVersion, PortableVersion, %A_ScriptFullPath%
-PortableVersion := SubStr(PortableVersion, 1, -2)
-SetWorkingDir, %A_Temp%
-Menu, Tray, Tip, %_Title% %PortableVersion%
-Menu, Tray, NoStandard
-Menu, Tray, Add, Portable, About
-Menu, Tray, Add, WinUpdater, About
-Menu, Tray, Add, Exit, Exit
-Menu, Tray, Default, Portable
+Init()
+CheckPaths()
+CheckArgs()
+If (ThisLauncherRunning()) {
+	UpdateProfile()	; Still needed for -P(rofile) ...
+	RunLibreWolf()
+	Exit()
+}
+CheckUpdates()
+RegBackup()
+UpdateProfile()
+RunLibreWolf()
+SetTimer, WaitForClose, 5000
+
+DSlash(Path) {
+	Return StrReplace(Path, "\", "\\")
+}
+
+Init() {
+	EnvGet, LocalAppData, LocalAppData
+	FileEncoding, UTF-8-RAW
+	FileGetVersion, PortableVersion, %A_ScriptFullPath%
+	PortableVersion := SubStr(PortableVersion, 1, -2)
+	SetWorkingDir, %A_Temp%
+	Menu, Tray, Tip, %_Title% %PortableVersion% [%A_ScriptDir%]`n%_Waiting%
+	Menu, Tray, NoStandard
+	Menu, Tray, Add, Portable, About
+	Menu, Tray, Add, WinUpdater, About
+	Menu, Tray, Add, Exit, Exit
+	Menu, Tray, Default, Portable
+}
 
 About(ItemName) {
-	Url = https://github.com/ltGuillaume/LibreWolf-%ItemName%
+	Url := "https://codeberg.org/ltguillaume/librewolf-" ItemName
 	Try Run, %Url%
 	Catch {
 		RegRead, DefBrowser, HKCR, .html
 		RegRead, DefBrowser, HKCR, %DefBrowser%\Shell\Open\Command
 		Run, % StrReplace(DefBrowser, "%1", Url)
-		If ErrorLevel
-		MsgBox, 48, %_Title%, %_NoDefaultBrowser%
+		If (ErrorLevel)
+			MsgBox, 48, %_Title%, %_NoDefaultBrowser%
 	}
 }
 
-; Check for running LibreWolf-Portable processes
-DetectHiddenWindows, On
-SetTitleMatchMode 2
-WinGet, Self, List, %A_ScriptName% ahk_exe %A_ScriptName%
-Loop, %Self%
-	If (Self%A_Index% != A_ScriptHwnd) {
-		PortableRunning := True
-;MsgBox, LibreWolf Portable is already running.`nSkipping preparation.
-		Goto, Run
+CheckPaths() {
+	If (!FileExist(LibreWolfExe)) {
+		MsgBox, 48, %_Title%, %_GetLibreWolfPathError%
+		Exit()
 	}
 
-For i, Arg in A_Args
-{
-	If (InStr(Arg, A_Space))
-		Arg := """" Arg """"
-	Args .= " " Arg
+	Call := DllCall("GetBinaryTypeW", "Str", "\\?\" LibreWolfExe, "UInt *", Build)
+	If (Call And Build = 6)
+		SetRegView, 64
+	Else If (Call And Build = 0)
+		SetRegView, 32
+	Else {
+		MsgBox, 48, %_Title%, %_GetBuildError% (Call = %Call%, Build = %Build%)
+		Exit()
+	}
+
+	; Check for profile path argument
+	If (A_Args.Length() > 1)
+		For i, Arg in A_Args
+			If (A_Args[i+1] And (Arg = "-P" Or Arg = "-Profile")) {
+				NewProfilePath := A_Args[i+1]
+				SplitPath, NewProfilePath,,,,, ProfileDrive
+				ProfilePath := (ProfileDrive ? "" : A_ScriptDir "\") NewProfilePath
+				A_Args.RemoveAt(i, 2)
+			}
+
+	If (!FileExist(ProfilePath)) {
+		MsgBox, 52, %_Title%, % StrReplace(_GetProfilePathError, "{ProfilePath}", ProfilePath)
+		IfMsgBox No
+			Exit()
+		IfMsgBox Yes
+			FileCreateDir, %ProfilePath%
+	}
+}
+
+CheckArgs() {
+	For i, Arg in A_Args
+	{
+		If (InStr(Arg, A_Space))
+			Arg := """" Arg """"
+		Args .= " " Arg
+	}
 }
 
 ; Check for updates (once a day) if LibreWolf-WinUpdater is found
-WinUpdater := A_ScriptDir "\LibreWolf-WinUpdater"
-If (FileExist(WinUpdater ".exe")) {
-	If FileExist(WinUpdater ".ini")
-		FileGetTime, LastUpdate, %WinUpdater%.ini
-	If (!LastUpdate Or SubStr(LastUpdate, 1, 8) < SubStr(A_Now, 1, 8)) {
-		Run, %WinUpdater%.exe /Portable %Args%
-		Exit
+CheckUpdates() {
+	If (FileExist(UpdaterBase ".exe")) {
+		If (FileExist(UpdaterBase ".ini"))
+			FileGetTime, LastUpdate, %UpdaterBase%.ini
+		If (!LastUpdate Or SubStr(LastUpdate, 1, 8) < SubStr(A_Now, 1, 8)) {
+			Run, %UpdaterBase%.exe /Portable %Args%
+			Exit()
+		}
 	}
 }
 
-; Check path to LibreWolf and profile
-If !FileExist(ExeFile) {
-	MsgBox, 48, %_Title%, %_GetProgramPathError%
-	Exit
-}
-If !FileExist(ProfilePath) {
-	MsgBox, 52, %_Title%, %_GetProfilePathError%
-	IfMsgBox No
-		Exit
-	IfMsgBox Yes
-		FileCreateDir, %ProfilePath%
-}
+RegBackup() {
+	PrepRegistry:
+	BackupKeyFound := False
 
-; Backup existing registry key
-RegKey  := "HKCU\Software\LibreWolf"
-
-PrepRegistry:
-RegKeyFound := False
-BackupKeyFound := False
-
-Loop, Reg, %RegKey%, K
-	RegKeyFound := True
-If RegKeyFound {
-	Loop, Reg, %RegKey%.pbak, K
-		BackupKeyFound := True
-	If BackupKeyFound {
-		MsgBox, 54, %_Title%, %_BackupKeyFound%`n%RegKey%.pbak`n%_BackupFoundActions%
-		IfMsgBox Cancel
-			Exit
-		IfMsgBox TryAgain
-			Goto, PrepRegistry
-	} Else
-		RunWait, reg copy %RegKey% %RegKey%.pbak /s /f,, Hide
-	RegDelete, %RegKey%
-}
-
-; Skip path adjustment if profile path hasn't changed since last run
-If FileExist(ProfilePath "\.portable-lastpath") {	; Compatibility for older versions
-	FileDelete, %ProfilePath%\.portable-lastpath
-	Goto, ReplacePaths
-}
-
-IniRead, LastPlatformDir, %ProfilePath%\compatibility.ini, Compatibility, LastPlatformDir
-If (LastPlatformDir = ProgramPath)
-	Goto, Run
-;MsgBox, Time to adjust the absolute profile path
-
-; Adjust absolute profile folder paths to current path
-ReplacePaths:
-ProgramPathDS := StrReplace(ProgramPath, "\", "\\")
-VarSetCapacity(ProgramPathUri, 300*2)
-DllCall("shlwapi\UrlCreateFromPathW", "Str", ProgramPath, "Str", ProgramPathUri, "UInt*", 300, "UInt", 0x00040000)	// 0x00040000 = URL_ESCAPE_AS_UTF8
-ProfilePathDS := StrReplace(ProfilePath, "\", "\\")
-VarSetCapacity(ProfilePathUri, 300*2)
-DllCall("shlwapi\UrlCreateFromPathW", "Str", ProfilePath, "Str", ProfilePathUri, "UInt*", 300, "UInt", 0x00040000)
-OverridesPath := "user_pref(""autoadmin.global_config_url"", """ ProfilePathUri "/librewolf.overrides.cfg"");"
-
-If FileExist(ProfilePath "\addonStartup.json.lz4") {
-	FileInstall, dejsonlz4.exe, dejsonlz4.exe, 0
-	FileInstall, jsonlz4.exe, jsonlz4.exe, 0
-	FileCopy, %ProfilePath%\addonStartup.json.lz4, %A_WorkingDir%
-
-	RunWait, dejsonlz4.exe addonStartup.json.lz4 addonStartup.json,, Hide
-	If ReplacePaths("addonStartup.json") {
-		RunWait, jsonlz4.exe addonStartup.json addonStartup.json.lz4,, Hide
-		FileMove, addonStartup.json.lz4, %ProfilePath%, 1
+	Loop, Reg, %RegKey%, K
+		RegKeyFound := True
+;MsgBox, RegKeyFound: %RegKeyFound%
+	If (RegKeyFound) {
+		Loop, Reg, %RegKey%.pbak, K
+			BackupKeyFound := True
+;MsgBox, BackupFound: %BackupKeyFound%
+		If (BackupKeyFound) {
+			If (OtherLauncherRunning())
+				Return
+			MsgBox, 54, %_Title%, %_BackupKeyFound%`n%RegKey%.pbak`n%_BackupFoundActions%
+			IfMsgBox Cancel
+				Exit()
+			IfMsgBox TryAgain
+				Goto, PrepRegistry
+		} Else {
+			RunWait, reg copy %RegKey% %RegKey%.pbak /s /f,, Hide
+			RegBackedUp := True
+		}
+		RegDelete, %RegKey%
 	}
-	FileDelete, addonStartup.json
 }
 
-If FileExist(ProfilePath "\extensions.json")
-	ReplacePaths(ProfilePath "\extensions.json")
+UpdateProfile() {
+	; Skip path adjustment if profile path hasn't changed since last run
+	; This won't work anymore with the support for multiple/custom profiles
+	;IniRead, LastPlatformDir, %ProfilePath%\compatibility.ini, Compatibility, LastPlatformDir
+	;If (LastPlatformDir = LibreWolfPath)
+	;	Return False
 
-ReplacePaths(ProfilePath "\prefs.js")
+	; Adjust absolute profile folder paths to current path
+	VarSetCapacity(LibreWolfPathUri, 300*2)
+	DllCall("shlwapi\UrlCreateFromPathW", "Str", LibreWolfPath, "Str", LibreWolfPathUri, "UInt*", 300, "UInt", 0x00040000)	// 0x00040000 = URL_ESCAPE_AS_UTF8
+	VarSetCapacity(ProfilePathUri, 300*2)
+	DllCall("shlwapi\UrlCreateFromPathW", "Str", ProfilePath, "Str", ProfilePathUri, "UInt*", 300, "UInt", 0x00040000)
+	OverridesPath := "user_pref(""autoadmin.global_config_url"", """ ProfilePathUri "/librewolf.overrides.cfg"");"
 
-ReplacePaths(FilePath) {
-	Local File, FileOrg	; Assume-global mode
+	If (FileExist(ProfilePath "\addonStartup.json.lz4")) {
+		FileInstall, dejsonlz4.exe, dejsonlz4.exe, 0
+		FileInstall, jsonlz4.exe, jsonlz4.exe, 0
+		FileCopy, %ProfilePath%\addonStartup.json.lz4, %A_WorkingDir%
 
+		RunWait, dejsonlz4.exe addonStartup.json.lz4 addonStartup.json,, Hide
+		If (ReplacePaths("addonStartup.json", LibreWolfPathUri, ProfilePathUri)) {
+			RunWait, jsonlz4.exe addonStartup.json addonStartup.json.lz4,, Hide
+			FileMove, addonStartup.json.lz4, %ProfilePath%, 1
+		}
+		FileDelete, addonStartup.json
+	}
+
+	If (FileExist(ProfilePath "\extensions.json"))
+		ReplacePaths(ProfilePath "\extensions.json", LibreWolfPathUri, ProfilePathUri)
+
+	ReplacePaths(ProfilePath "\prefs.js", LibreWolfPathUri, ProfilePathUri, OverridesPath)
+}
+
+ReplacePaths(FilePath, LibreWolfPathUri, ProfilePathUri, OverridesPath = False) {
 	If (!FileExist(FilePath) And FilePath = ProfilePath "\prefs.js") {
 			FileAppend, %OverridesPath%, %FilePath%
 		Return
 	}
 
 	FileRead, File, %FilePath%
-	If Errorlevel {
+	If (Errorlevel) {
 		MsgBox, 48, %_Title%, %_FileReadError%`n%FilePath%
 		Return
-	}		
+	}
 	FileOrg := File
 
 	If (FilePath = ProfilePath "\prefs.js") {
-		File := RegExReplace(File, "i)(, "")[^""]+?(\Qlibrewolf.overrides.cfg""\E)", "$1" ProfilePathUri "/$2", Count)
+		File := RegExReplace(File, "i)(,\s*"")[^""]+?(\Qlibrewolf.overrides.cfg""\E)", "$1" ProfilePathUri "/$2", Count)
 ;MsgBox, librewolf.overrides.cfg path was replaced %Count% times
 		If (Count = 0)
 			File .= OverridesPath
 	}
-	File := RegExReplace(File, "i).:\\[^""]+?(\Q\\browser\\features\E)", ProgramPathDS "$1")
-	File := RegExReplace(File, "i)file:\/\/\/[^""]+?(\Q/browser/features\E)", ProgramPathUri "$1")
-	File := RegExReplace(File, "i).:\\[^""]+?(\Q\\extensions\E)", ProfilePathDS "$1")
+	File := RegExReplace(File, "i).:\\[^""]+?(\Q\\browser\\features\E)", DSlash(LibreWolfPath) "$1")
+	File := RegExReplace(File, "i)file:\/\/\/[^""]+?(\Q/browser/features\E)", LibreWolfPathUri "$1")
+	File := RegExReplace(File, "i).:\\[^""]+?(\Q\\extensions\E)", DSlash(ProfilePath) "$1")
 	File := RegExReplace(File, "i)file:\/\/\/[^""]+?(\Q/extensions\E)", ProfilePathUri "$1")
 
 	If (File = FileOrg)
 		Return False
 	Else {
-		FileMove, %FilePath%, %FilePath%.pbak, 1
+		FileMove, %FilePath%, %ProfilePath%\%FilePath%.pbak, 1
 		FileAppend, %File%, %FilePath%
 		Return True
 	}
 }
 
-; Get CityHash for current instance
+RunLibreWolf() {
+	If (!ThisLauncherRunning)
+		SetTimer, GetCityHash, 1000
+
+	If (LibreWolfRunning() And !ThisLibreWolfRunning())
+		Args := "--new-instance " Args
+
+;MsgBox, %LibreWolfExe% -profile "%ProfilePath%" %Args%
+	RunWait, %LibreWolfExe% -Profile "%ProfilePath%" %Args%,, UseErrorLevel
+
+	If (ErrorLevel) {
+		Message := _ErrorStarting " " ErrorLevel
+		If (Errorlevel = -1073741515)
+			Message .= "`n`n" _MissingDLLs
+		MsgBox, 48, %_Title%, %Message%
+	}
+}
+
 GetCityHash() {
-	Global RegKey, CityHash
 	Loop, Reg, %RegKey%\Firefox\Installer, K
 		CityHash := A_LoopRegName
-	If CityHash {
+	If (CityHash) {
 		SetTimer,, Delete
 ;MsgBox, CityHash = %CityHash%
 	}
 }
 
-; Run LibreWolf
-Run:
-If !PortableRunning
-	SetTimer, GetCityHash, 1000
-
-;MsgBox, %ExeFile% -profile "%ProfilePath%" %Args%
-RunWait, %ExeFile% -profile "%ProfilePath%" %Args%,, UseErrorLevel
-
-If ErrorLevel {
-	Message := _ErrorStarting " " ErrorLevel
-	If Errorlevel = -1073741515
-		Message .= "`n`n" _MissingDLLs
-	MsgBox, 48, %_Title%, %Message%
+WaitForClose() {
+	If (LibreWolfRunning())
+		Return
+	SetTimer,, Delete
+	SetTimer, CleanUp, 2000
 }
 
-; Leave the rest to the already running LibreWolf-Portable instance
-If PortableRunning
-	Exit
+ThisLibreWolfRunning() {
+	Return LibreWolfRunning(" and ExecutablePath=""" DSlash(LibreWolfExe) """")
+}
 
-ExeFileDS := StrReplace(ExeFile, "\", "\\")
-; Wait for all LibreWolf processes of current user to be closed
-WaitClose:
-Sleep, 5000
-For Process in ComObjGet("winmgmts:").ExecQuery("Select ProcessId from Win32_Process where ExecutablePath=""" ExeFileDS """") {
-   Try {
-		oUser := ComObject(0x400C, &User)	; VT_BYREF
-		Process.GetOwner(oUser)
+LibreWolfRunning(Where := "") {
+	Return ProcessRunning("Name=""librewolf.exe""" Where)
+}
+
+OtherLauncherRunning() {
+	Return LauncherRunning("Name=""LibreWolf-Portable.exe"" and ExecutablePath<>""" DSlash(A_ScriptFullPath) """")
+}
+
+ThisLauncherRunning() {
+	Return LauncherRunning("ExecutablePath=""" DSlash(A_ScriptFullPath) """")
+}
+
+LauncherRunning(Where) {
+	Process, Exist	; Put launcher's process id into ErrorLevel
+	Result := ProcessRunning("ProcessId!=" ErrorLevel " and " Where)
+;MsgBox, LauncherRunning: %Result%
+	Return %Result%
+}
+
+ProcessRunning(Where := "") {
+;MsgBox, ProcessRunning Where:`n%Where%
+	Query := "Select ProcessId from Win32_Process where " Where
+	For Process in ComObjGet("winmgmts:").ExecQuery(Query) {
+		 Try {
+			VarSetCapacity(User, 64)	; Request memory capacity, otherwise the Where variable got filled with random data (specifically "lf\Firefox\Installer")
+			oUser := ComObject(0x400C, &User)	; VT_BYREF
+			Process.GetOwner(oUser)
 ;MsgBox, % oUser[]
-		If (oUser[] = A_UserName)
-			Goto, WaitClose
-	} Catch e
-		Goto, WaitClose
+			If (oUser[] = A_UserName)
+				Return True
+		} Catch e
+			Return True
+	}
+	Return False
 }
 
-; Restore backed up registry key
-RegDelete, %RegKey%
-If RegKeyFound {
-	RunWait, reg copy %RegKey%.pbak %RegKey% /s /f,, Hide
-	RegDelete, %RegKey%.pbak
-}
+CleanUp() {
+	; Wait until all launcher instances are closed before restoring backed up registry key
+	If (RegBackedUp And OtherLauncherRunning())
+		Return
 
-; Remove files with CityHash of this instance
-If CityHash {
-	FileDelete, %MozCommonPath%\*%CityHash%*.*
-	FileRemoveDir, %MozCommonPath%\updates\%CityHash%, 1
-}
+	SetTimer,, Delete
 
-; Remove AppData and Temp folders if empty
-Folders := [ MozCommonPath, A_AppData "\LibreWolf\Extensions", A_AppData "\LibreWolf", LocalAppData "\LibreWolf", "mozilla-temp-files" ]
-For i, Folder in Folders
-	FileRemoveDir, %Folder%
+	; Remove files with CityHash of this LibreWolf instance
+	If (CityHash) {
+		FileDelete, %MozCommonPath%\*%CityHash%*.*
+		FileRemoveDir, %MozCommonPath%\updates\%CityHash%, 1
+	}
 
-; Remove Start menu shortcut
-FileDelete, %A_AppData%\Microsoft\Windows\Start Menu\Programs\{-brand-shortcut-name} Private Browsing.lnk
-FileDelete, %A_AppData%\Microsoft\Windows\Start Menu\Programs\LibreWolf Private Browsing.lnk
+	If (OtherLauncherRunning())
+		Exit()
 
-; Clean-up
-Exit:
-If !PortableRunning
+	; Restore backed up registry key
+;MsgBox, RegKey: %RegKey%`nRegKeyFound: %RegKeyFound%
+	RegDelete, %RegKey%
+	If (RegKeyFound) {
+		RunWait, reg copy %RegKey%.pbak %RegKey% /s /f,, Hide
+		RegDelete, %RegKey%.pbak
+	}
+
+	; Remove AppData and Temp folders if empty
+	Folders := [ MozCommonPath, A_AppData "\LibreWolf\Extensions", A_AppData "\LibreWolf", LocalAppData "\LibreWolf", "mozilla-temp-files" ]
+	For i, Folder in Folders
+		FileRemoveDir, %Folder%
+
+	; Remove Start menu shortcut
+	FileDelete, %A_AppData%\Microsoft\Windows\Start Menu\Programs\{-brand-shortcut-name} Private Browsing.lnk
+	FileDelete, %A_AppData%\Microsoft\Windows\Start Menu\Programs\LibreWolf Private Browsing.lnk
+
+	; Clean-up
 	FileDelete, *jsonlz4.exe
+	FileDelete, %UpdaterBase%.exe.pbak
+
+	Exit()
+}
+
+Exit() {
+	ExitApp
+}
