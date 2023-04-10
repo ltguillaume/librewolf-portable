@@ -1,7 +1,7 @@
 ; LibreWolf Portable - https://codeberg.org/ltguillaume/librewolf-portable
-;@Ahk2Exe-SetFileVersion 1.4.6
+;@Ahk2Exe-SetFileVersion 1.5.0
 
-;@Ahk2Exe-Bin Unicode 64*
+;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
 ;@Ahk2Exe-SetDescription LibreWolf Portable
 ;@Ahk2Exe-SetMainIcon LibreWolf-Portable.ico
@@ -27,6 +27,7 @@ Global Args     := ""
 
 ; Strings
 Global _Title            := "LibreWolf Portable"
+, _GetBuildError         := "Could not determine the build architecture (32/64-bit) of LibreWolf."
 , _Waiting               := "Waiting for all LibreWolf processes to close..."
 , _NoDefaultBrowser      := "Could not open your default browser."
 , _GetLibreWolfPathError := "Could not find the path to LibreWolf:`n" LibreWolfPath
@@ -77,13 +78,23 @@ About(ItemName) {
 		RegRead, DefBrowser, HKCR, %DefBrowser%\Shell\Open\Command
 		Run, % StrReplace(DefBrowser, "%1", Url)
 		If (ErrorLevel)
-		MsgBox, 48, %_Title%, %_NoDefaultBrowser%
+			MsgBox, 48, %_Title%, %_NoDefaultBrowser%
 	}
 }
 
 CheckPaths() {
 	If (!FileExist(LibreWolfExe)) {
 		MsgBox, 48, %_Title%, %_GetLibreWolfPathError%
+		Exit()
+	}
+
+	Call := DllCall("GetBinaryTypeW", "Str", "\\?\" LibreWolfExe, "UInt *", Build)
+	If (Call And Build = 6)
+		SetRegView, 64
+	Else If (Call And Build = 0)
+		SetRegView, 32
+	Else {
+		MsgBox, 48, %_Title%, %_GetBuildError% (Call = %Call%, Build = %Build%)
 		Exit()
 	}
 
@@ -197,7 +208,7 @@ ReplacePaths(FilePath, LibreWolfPathUri, ProfilePathUri, OverridesPath = False) 
 	If (Errorlevel) {
 		MsgBox, 48, %_Title%, %_FileReadError%`n%FilePath%
 		Return
-	}		
+	}
 	FileOrg := File
 
 	If (FilePath = ProfilePath "\prefs.js") {
