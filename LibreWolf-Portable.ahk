@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://codeberg.org/ltguillaume/librewolf-portable
-;@Ahk2Exe-SetFileVersion 1.5.0
+;@Ahk2Exe-SetFileVersion 1.5.1
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -167,18 +167,21 @@ RegBackup() {
 }
 
 UpdateProfile() {
-	; Skip path adjustment if profile path hasn't changed since last run
-	; This won't work anymore with the support for multiple/custom profiles
-	;IniRead, LastPlatformDir, %ProfilePath%\compatibility.ini, Compatibility, LastPlatformDir
-	;If (LastPlatformDir = LibreWolfPath)
-	;	Return False
-
 	; Adjust absolute profile folder paths to current path
 	VarSetCapacity(LibreWolfPathUri, 300*2)
 	DllCall("shlwapi\UrlCreateFromPathW", "Str", LibreWolfPath, "Str", LibreWolfPathUri, "UInt*", 300, "UInt", 0x00040000)	// 0x00040000 = URL_ESCAPE_AS_UTF8
 	VarSetCapacity(ProfilePathUri, 300*2)
 	DllCall("shlwapi\UrlCreateFromPathW", "Str", ProfilePath, "Str", ProfilePathUri, "UInt*", 300, "UInt", 0x00040000)
 	OverridesPath := "user_pref(""autoadmin.global_config_url"", """ ProfilePathUri "/librewolf.overrides.cfg"");"
+
+	; Skip path adjustments if profile path hasn't changed since last run
+	If (FileExist(ProfilePath "\prefs.js")) {
+		FileRead, PrefsFile, %ProfilePath%\prefs.js
+		If (InStr(PrefsFile, OverridesPath)) {
+;MsgBox, Profile doesn't need to be updated.
+			Return
+		}
+	}
 
 	If (FileExist(ProfilePath "\addonStartup.json.lz4")) {
 		FileInstall, dejsonlz4.exe, dejsonlz4.exe, 0
