@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://codeberg.org/ltguillaume/librewolf-portable
-;@Ahk2Exe-SetFileVersion 1.5.1
+;@Ahk2Exe-SetFileVersion 1.6.0
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -28,16 +28,17 @@ Global Args     := ""
 
 ; Strings
 Global _Title            := "LibreWolf Portable"
-, _GetBuildError         := "Could not determine the build architecture (32/64-bit) of LibreWolf."
+, _GetBuildError         := "Could not determine the build architecture (32/64-bit) of LibreWolf. The file librewolf.exe may be corrupt.`n`n{}"
 , _Waiting               := "Waiting for all LibreWolf processes to close..."
 , _NoDefaultBrowser      := "Could not open your default browser."
 , _GetLibreWolfPathError := "Could not find the path to LibreWolf:`n" LibreWolfPath
-, _GetProfilePathError   := "Could not find the path to the profile folder:`n{ProfilePath}`nIf this is the first time you are running LibreWolf Portable, you can ignore this. Continue?"
+, _CreateProfileDirError := "The profile folder does not exist yet and the automatic creation of the folder failed. Check if your Windows user has write permissions to the folder " A_ScriptDir
 , _BackupKeyFound        := "A backup registry key has been found:"
 , _BackupFoundActions    := "This means LibreWolf Portable has probably not been closed correctly. Continue to restore the found backup key after running, or remove the backup key yourself and press Retry to back up the current key."
 , _ErrorStarting         := "LibreWolf could not be started. Exit code:"
 , _MissingDLLs           := "You probably don't have msvcp140.dll and vcruntime140.dll present on your system. Put these files in the folder " LibreWolfPath ",`nor install the Visual C++ runtime libraries via https://librewolf.net."
-, _FileReadError         := "Error reading file for modification:"
+, _FileReadError         := "Error reading file for modification:`n{}"
+, _FileWriteError        := "Error writing to file:`n{}`n`nClose all LibreWolf processes and check if your Windows user has write permissions to the profile folder " ProfilePath
 
 Init()
 CheckPaths()
@@ -51,7 +52,7 @@ CheckUpdates()
 RegBackup()
 UpdateProfile()
 RunLibreWolf()
-SetTimer, WaitForClose, 5000
+SetTimer, WaitForClose, 2000
 
 DSlash(Path) {
 	Return StrReplace(Path, "\", "\\")
@@ -84,37 +85,33 @@ About(ItemName) {
 }
 
 CheckPaths() {
-	If (!FileExist(LibreWolfExe)) {
-		MsgBox, 48, %_Title%, %_GetLibreWolfPathError%
-		Exit()
-	}
+	If (!FileExist(LibreWolfExe))
+		Die(_GetLibreWolfPathError)
 
 	Call := DllCall("GetBinaryTypeW", "Str", "\\?\" LibreWolfExe, "UInt *", Build)
 	If (Call And Build = 6)
 		SetRegView, 64
 	Else If (Call And Build = 0)
 		SetRegView, 32
-	Else {
-		MsgBox, 48, %_Title%, %_GetBuildError% (Call = %Call%, Build = %Build%)
-		Exit()
-	}
+	Else
+		Die(_GetBuildError, "Call = " Call ", Build = " Build)
 
 	; Check for profile path argument
 	If (A_Args.Length() > 1)
 		For i, Arg in A_Args
 			If (A_Args[i+1] And (Arg = "-P" Or Arg = "-Profile")) {
 				NewProfilePath := A_Args[i+1]
-				SplitPath, NewProfilePath,,,,, ProfileDrive
-				ProfilePath := (ProfileDrive ? "" : A_ScriptDir "\") NewProfilePath
+				SplitPath, NewProfilePath,,,,, ProfileDrive	; Absolute path
+				ProfilePath := (ProfileDrive ? "" : A_ScriptDir "\Profiles\") NewProfilePath
 				A_Args.RemoveAt(i, 2)
+				If (InStr(FileExist(A_ScriptDir "\" NewProfilePath), "D"))	; Fix custom profile location
+					FileMoveDir, %A_ScriptDir%\%NewProfilePath%, %A_ScriptDir%\Profiles\%NewProfilePath%, R
 			}
 
 	If (!FileExist(ProfilePath)) {
-		MsgBox, 52, %_Title%, % StrReplace(_GetProfilePathError, "{ProfilePath}", ProfilePath)
-		IfMsgBox No
-			Exit()
-		IfMsgBox Yes
-			FileCreateDir, %ProfilePath%
+		FileCreateDir, %ProfilePath%
+		If (ErrorLevel)
+			Die(_CreateProfileDirError)
 	}
 }
 
@@ -133,7 +130,7 @@ CheckUpdates() {
 		If (FileExist(UpdaterBase ".ini"))
 			FileGetTime, LastUpdate, %UpdaterBase%.ini
 		If (!LastUpdate Or SubStr(LastUpdate, 1, 8) < SubStr(A_Now, 1, 8)) {
-			Run, %UpdaterBase%.exe /Portable %Args%
+			Run, %UpdaterBase%.exe /Portable -P "%ProfilePath%" %Args%
 			Exit()
 		}
 	}
@@ -186,12 +183,17 @@ UpdateProfile() {
 	If (FileExist(ProfilePath "\addonStartup.json.lz4")) {
 		FileInstall, dejsonlz4.exe, dejsonlz4.exe, 0
 		FileInstall, jsonlz4.exe, jsonlz4.exe, 0
+		FileDelete, %A_WorkingDir%\addonStartup.json.lz4
 		FileCopy, %ProfilePath%\addonStartup.json.lz4, %A_WorkingDir%
 
 		RunWait, dejsonlz4.exe addonStartup.json.lz4 addonStartup.json,, Hide
+		If (!FileExist("addonStartup.json"))
+			Die(_FileReadError, A_WorkingDir "addonStartup.json")
 		If (ReplacePaths("addonStartup.json", LibreWolfPathUri, ProfilePathUri)) {
 			RunWait, jsonlz4.exe addonStartup.json addonStartup.json.lz4,, Hide
 			FileMove, addonStartup.json.lz4, %ProfilePath%, 1
+			If (ErrorLevel)
+				Die(_FileWriteError, ProfilePath "addonStartup.json.lz4")
 		}
 		FileDelete, addonStartup.json
 	}
@@ -203,16 +205,16 @@ UpdateProfile() {
 }
 
 ReplacePaths(FilePath, LibreWolfPathUri, ProfilePathUri, OverridesPath = False) {
-	If (!FileExist(FilePath) And FilePath = ProfilePath "\prefs.js") {
-			FileAppend, %OverridesPath%, %FilePath%
+	If (FilePath = ProfilePath "\prefs.js" And !FileExist(FilePath)) {
+		FileAppend, %OverridesPath%, %FilePath%
+		If (ErrorLevel)
+			Die(_FileWriteError, FilePath)
 		Return
 	}
 
 	FileRead, File, %FilePath%
-	If (Errorlevel) {
-		MsgBox, 48, %_Title%, %_FileReadError%`n%FilePath%
-		Return
-	}
+	If (ErrorLevel)
+		Die(_FileReadError, FilePath)
 	FileOrg := File
 
 	If (FilePath = ProfilePath "\prefs.js") {
@@ -230,7 +232,11 @@ ReplacePaths(FilePath, LibreWolfPathUri, ProfilePathUri, OverridesPath = False) 
 		Return False
 	Else {
 		FileMove, %FilePath%, %ProfilePath%\%FilePath%.pbak, 1
+		If (ErrorLevel)
+			Die(_FileWriteError, FilePath ".pbak")
 		FileAppend, %File%, %FilePath%
+		If (ErrorLevel)
+			Die(_FileWriteError, FilePath)
 		Return True
 	}
 }
@@ -247,7 +253,7 @@ RunLibreWolf() {
 
 	If (ErrorLevel) {
 		Message := _ErrorStarting " " ErrorLevel
-		If (Errorlevel = -1073741515)
+		If (ErrorLevel = -1073741515)
 			Message .= "`n`n" _MissingDLLs
 		MsgBox, 48, %_Title%, %Message%
 	}
@@ -330,7 +336,8 @@ CleanUp() {
 	RegDelete, %RegKey%
 	If (RegKeyFound) {
 		RunWait, reg copy %RegKey%.pbak %RegKey% /s /f,, Hide
-		RegDelete, %RegKey%.pbak
+		If (!ErrorLevel)
+			RegDelete, %RegKey%.pbak
 	}
 
 	; Remove AppData and Temp folders if empty
@@ -347,6 +354,13 @@ CleanUp() {
 	FileDelete, %UpdaterBase%.exe.pbak
 
 	Exit()
+}
+
+Die(Error, Var := False) {
+		If (Var)
+			Error := StrReplace(Error, "{}", Var)
+		MsgBox, 48, %_Title%, %Error%
+		Exit()
 }
 
 Exit() {
