@@ -231,7 +231,7 @@ ReplacePaths(FilePath, LibreWolfPathUri, ProfilePathUri, OverridesPath = False) 
 	If (File = FileOrg)
 		Return False
 	Else {
-		FileMove, %FilePath%, %ProfilePath%\%FilePath%.pbak, 1
+		FileMove, %FilePath%, %FilePath%.pbak, 1
 		If (ErrorLevel)
 			Die(_FileWriteError, FilePath ".pbak")
 		FileAppend, %File%, %FilePath%
@@ -315,6 +315,13 @@ ProcessRunning(Where := "") {
 	Return False
 }
 
+Die(Error, Var := False) {
+		If (Var)
+			Error := StrReplace(Error, "{}", Var)
+		MsgBox, 48, %_Title%, %Error%
+		CleanUp()
+}
+
 CleanUp() {
 	; Wait until all launcher instances are closed before restoring backed up registry key
 	If (RegBackedUp And OtherLauncherRunning())
@@ -354,13 +361,6 @@ CleanUp() {
 	FileDelete, %UpdaterBase%.exe.pbak
 
 	Exit()
-}
-
-Die(Error, Var := False) {
-		If (Var)
-			Error := StrReplace(Error, "{}", Var)
-		MsgBox, 48, %_Title%, %Error%
-		Exit()
 }
 
 Exit() {
