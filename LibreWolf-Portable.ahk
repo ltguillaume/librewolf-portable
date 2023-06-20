@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://codeberg.org/ltguillaume/librewolf-portable
-;@Ahk2Exe-SetFileVersion 1.6.0
+;@Ahk2Exe-SetFileVersion 1.6.1
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -327,7 +327,7 @@ CleanUp() {
 	If (RegBackedUp And OtherLauncherRunning())
 		Return
 
-	SetTimer,, Delete
+	SetTimer, CleanUp, Delete
 
 	; Remove files with CityHash of this LibreWolf instance
 	If (CityHash) {
