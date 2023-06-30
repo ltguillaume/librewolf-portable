@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://codeberg.org/ltguillaume/librewolf-portable
-;@Ahk2Exe-SetFileVersion 1.6.1
+;@Ahk2Exe-SetFileVersion 1.6.2
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -100,12 +100,12 @@ CheckPaths() {
 	If (A_Args.Length() > 1)
 		For i, Arg in A_Args
 			If (A_Args[i+1] And (Arg = "-P" Or Arg = "-Profile")) {
-				NewProfilePath := A_Args[i+1]
-				SplitPath, NewProfilePath,,,,, ProfileDrive	; Absolute path
-				ProfilePath := (ProfileDrive ? "" : A_ScriptDir "\Profiles\") NewProfilePath
+				Profile := A_Args[i+1]
+				SplitPath, Profile,,,,, ProfileDrive	; Absolute path
+				If (!ProfileDrive)
+					Profile := RegExReplace(Profile, "i)^Profiles\\")	; Fix custom profile location
+				ProfilePath := (ProfileDrive ? "" : A_ScriptDir "\Profiles\") Profile
 				A_Args.RemoveAt(i, 2)
-				If (InStr(FileExist(A_ScriptDir "\" NewProfilePath), "D"))	; Fix custom profile location
-					FileMoveDir, %A_ScriptDir%\%NewProfilePath%, %A_ScriptDir%\Profiles\%NewProfilePath%, R
 			}
 
 	If (!FileExist(ProfilePath)) {
