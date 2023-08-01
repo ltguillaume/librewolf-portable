@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://codeberg.org/ltguillaume/librewolf-portable
-;@Ahk2Exe-SetFileVersion 1.6.2
+;@Ahk2Exe-SetFileVersion 1.6.3
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -12,6 +12,7 @@
 ;@Ahk2Exe-PostExec ResourceHacker.exe -open "%A_WorkFileName%" -save "%A_WorkFileName%" -action delete -mask ICONGROUP`,208`, ,,,,1
 
 #NoEnv
+#NoTrayIcon
 #Persistent
 #SingleInstance Off
 
@@ -70,6 +71,12 @@ Init() {
 	Menu, Tray, Add, WinUpdater, About
 	Menu, Tray, Add, Exit, Exit
 	Menu, Tray, Default, Portable
+
+	SplitPath, A_ScriptFullPath,,,, BaseName
+	IniFile := A_ScriptDir "\" BaseName ".ini"
+	IniRead, HideTrayIcon, %IniFile%, Settings, HideTrayIcon, 0
+	If (!HideTrayIcon)
+		Menu, Tray, Icon
 }
 
 About(ItemName) {
