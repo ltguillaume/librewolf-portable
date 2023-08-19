@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://codeberg.org/ltguillaume/librewolf-portable
-;@Ahk2Exe-SetFileVersion 1.6.3
+;@Ahk2Exe-SetFileVersion 1.6.4
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -60,7 +60,6 @@ DSlash(Path) {
 }
 
 Init() {
-	EnvGet, LocalAppData, LocalAppData
 	FileEncoding, UTF-8-RAW
 	FileGetVersion, PortableVersion, %A_ScriptFullPath%
 	PortableVersion := SubStr(PortableVersion, 1, -2)
@@ -355,6 +354,7 @@ CleanUp() {
 	}
 
 	; Remove AppData and Temp folders if empty
+	EnvGet, LocalAppData, LocalAppData
 	Folders := [ MozCommonPath, A_AppData "\LibreWolf\Extensions", A_AppData "\LibreWolf", LocalAppData "\LibreWolf", "mozilla-temp-files" ]
 	For i, Folder in Folders
 		FileRemoveDir, %Folder%
