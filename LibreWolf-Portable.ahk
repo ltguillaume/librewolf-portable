@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://codeberg.org/ltguillaume/librewolf-portable
-;@Ahk2Exe-SetFileVersion 1.6.4
+;@Ahk2Exe-SetFileVersion 1.6.5
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -285,7 +285,7 @@ ThisLibreWolfRunning() {
 	Return LibreWolfRunning(" and ExecutablePath=""" DSlash(LibreWolfExe) """")
 }
 
-LibreWolfRunning(Where := "") {
+LibreWolfRunning(Where := " and not ExecutablePath like ""%\\shims\\%""") {	; Exclude scoop shim
 	Return ProcessRunning("Name=""librewolf.exe""" Where)
 }
 
