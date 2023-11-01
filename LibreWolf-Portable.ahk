@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://codeberg.org/ltguillaume/librewolf-portable
-;@Ahk2Exe-SetFileVersion 1.6.5
+;@Ahk2Exe-SetFileVersion 1.6.6
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -365,7 +365,7 @@ CleanUp() {
 
 	; Clean-up
 	FileDelete, *jsonlz4.exe
-	FileDelete, %UpdaterBase%.exe.pbak
+	FileDelete, %UpdaterBase%.exe.wubak
 
 	Exit()
 }
