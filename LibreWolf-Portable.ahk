@@ -91,8 +91,16 @@ About(ItemName) {
 }
 
 CheckPaths() {
-	If (!FileExist(LibreWolfExe))
-		Die(_GetLibreWolfPathError)
+	If (!FileExist(LibreWolfExe)) {
+		If (FileExist(LibreWolfExe ".wubak")) {
+			If (WinExist("ahk_exe " UpdaterBase ".exe"))
+				WinActivate()
+				Exit()
+			Else
+				CheckUpdates(True)
+		} Else
+			Die(_GetLibreWolfPathError)
+	}
 
 	Call := DllCall("GetBinaryTypeW", "Str", "\\?\" LibreWolfExe, "UInt *", Build)
 	If (Call And Build = 6)
@@ -131,11 +139,11 @@ CheckArgs() {
 }
 
 ; Check for updates (once a day) if LibreWolf-WinUpdater is found
-CheckUpdates() {
+CheckUpdates(Forced = False) {
 	If (FileExist(UpdaterBase ".exe")) {
 		If (FileExist(UpdaterBase ".ini"))
 			FileGetTime, LastUpdate, %UpdaterBase%.ini
-		If (!LastUpdate Or SubStr(LastUpdate, 1, 8) < SubStr(A_Now, 1, 8)) {
+		If (Forced Or !LastUpdate Or SubStr(LastUpdate, 1, 8) < SubStr(A_Now, 1, 8)) {
 			Run, %UpdaterBase%.exe /Portable -P "%ProfilePath%" %Args%
 			Exit()
 		}
