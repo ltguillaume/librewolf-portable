@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://codeberg.org/ltguillaume/librewolf-portable
-;@Ahk2Exe-SetFileVersion 1.6.6
+;@Ahk2Exe-SetFileVersion 1.7.0
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -91,14 +91,13 @@ About(ItemName) {
 }
 
 CheckPaths() {
-	If (!FileExist(LibreWolfExe)) {
-		If (FileExist(LibreWolfExe ".wubak")) {
-			If (WinExist("ahk_exe " UpdaterBase ".exe"))
-				WinActivate()
-				Exit()
-			Else
-				CheckUpdates(True)
-		} Else
+	If (UpdaterPid := UpdaterRunning()) {
+		WinActivate, ahk_pid %UpdaterPid%
+		Exit()
+	} Else If (!FileExist(LibreWolfExe)) {
+		If (FileExist(LibreWolfExe ".wubak"))
+			CheckUpdates(True)
+		Else
 			Die(_GetLibreWolfPathError)
 	}
 
@@ -215,10 +214,13 @@ UpdateProfile() {
 	If (FileExist(ProfilePath "\extensions.json"))
 		ReplacePaths(ProfilePath "\extensions.json", LibreWolfPathUri, ProfilePathUri)
 
+	If (FileExist(ProfilePath "\pkcs11.txt"))
+		ReplacePaths(ProfilePath "\pkcs11.txt")
+
 	ReplacePaths(ProfilePath "\prefs.js", LibreWolfPathUri, ProfilePathUri, OverridesPath)
 }
 
-ReplacePaths(FilePath, LibreWolfPathUri, ProfilePathUri, OverridesPath = False) {
+ReplacePaths(FilePath, LibreWolfPathUri = False, ProfilePathUri = False, OverridesPath = False) {
 	If (FilePath = ProfilePath "\prefs.js" And !FileExist(FilePath)) {
 		FileAppend, %OverridesPath%, %FilePath%
 		If (ErrorLevel)
@@ -231,16 +233,21 @@ ReplacePaths(FilePath, LibreWolfPathUri, ProfilePathUri, OverridesPath = False) 
 		Die(_FileReadError, FilePath)
 	FileOrg := File
 
-	If (FilePath = ProfilePath "\prefs.js") {
+	If (FilePath = ProfilePath "\pkcs11.txt")
+		File := RegExReplace(File, "i).:\\[^']+?'", DSlash(ProfilePath) "'")
+
+	If (ProfilePathUri And FilePath = ProfilePath "\prefs.js") {
 		File := RegExReplace(File, "i)(,\s*"")[^""]+?(\Qlibrewolf.overrides.cfg""\E)", "$1" ProfilePathUri "/$2", Count)
 ;MsgBox, librewolf.overrides.cfg path was replaced %Count% times
 		If (Count = 0)
 			File .= OverridesPath
 	}
 	File := RegExReplace(File, "i).:\\[^""]+?(\Q\\browser\\features\E)", DSlash(LibreWolfPath) "$1")
-	File := RegExReplace(File, "i)file:\/\/\/[^""]+?(\Q/browser/features\E)", LibreWolfPathUri "$1")
 	File := RegExReplace(File, "i).:\\[^""]+?(\Q\\extensions\E)", DSlash(ProfilePath) "$1")
-	File := RegExReplace(File, "i)file:\/\/\/[^""]+?(\Q/extensions\E)", ProfilePathUri "$1")
+	If (LibreWolfPathUri)
+		File := RegExReplace(File, "i)file:\/\/\/[^""]+?(\Q/browser/features\E)", LibreWolfPathUri "$1")
+	If (ProfilePathUri)
+		File := RegExReplace(File, "i)file:\/\/\/[^""]+?(\Q/extensions\E)", ProfilePathUri "$1")
 
 	If (File = FileOrg)
 		Return False
@@ -312,6 +319,10 @@ LauncherRunning(Where) {
 	Return %Result%
 }
 
+UpdaterRunning() {
+	Return ProcessRunning("ExecutablePath=""" DSlash(UpdaterBase ".exe") """")
+}
+
 ProcessRunning(Where := "") {
 ;MsgBox, ProcessRunning Where:`n%Where%
 	Query := "Select ProcessId from Win32_Process where " Where
@@ -322,9 +333,9 @@ ProcessRunning(Where := "") {
 			Process.GetOwner(oUser)
 ;MsgBox, % oUser[]
 			If (oUser[] = A_UserName)
-				Return True
+				Return Process.ProcessId
 		} Catch e
-			Return True
+			Return Process.ProcessId
 	}
 	Return False
 }
