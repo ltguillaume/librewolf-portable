@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://codeberg.org/ltguillaume/librewolf-portable
-;@Ahk2Exe-SetFileVersion 1.7.0
+;@Ahk2Exe-SetFileVersion 1.7.1
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -53,7 +53,7 @@ CheckUpdates()
 RegBackup()
 UpdateProfile()
 RunLibreWolf()
-SetTimer, WaitForClose, 2000
+WaitForClose()
 
 DSlash(Path) {
 	Return StrReplace(Path, "\", "\\")
@@ -290,10 +290,9 @@ GetCityHash() {
 }
 
 WaitForClose() {
-	If (LibreWolfRunning())
-		Return
-	SetTimer,, Delete
-	SetTimer, CleanUp, 2000
+	While (Pid := LibreWolfRunning())
+		Process, WaitClose, %Pid%
+	CleanUp()
 }
 
 ThisLibreWolfRunning() {
@@ -349,10 +348,8 @@ Die(Error, Var := False) {
 
 CleanUp() {
 	; Wait until all launcher instances are closed before restoring backed up registry key
-	If (RegBackedUp And OtherLauncherRunning())
-		Return
-
-	SetTimer, CleanUp, Delete
+	While (RegBackedUp And Pid := OtherLauncherRunning())
+		Process, WaitClose, %Pid%
 
 	; Remove files with CityHash of this LibreWolf instance
 	If (CityHash) {
