@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://codeberg.org/ltguillaume/librewolf-portable
-;@Ahk2Exe-SetFileVersion 1.7.1
+;@Ahk2Exe-SetFileVersion 1.7.2
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -281,7 +281,8 @@ RunLibreWolf() {
 }
 
 GetCityHash() {
-	Loop, Reg, %RegKey%\Firefox\Installer, K
+;MsgBox, GetCityHash()
+	Loop, Reg, %RegKey%\librewolf\Installer, K
 		CityHash := A_LoopRegName
 	If (CityHash) {
 		SetTimer,, Delete
