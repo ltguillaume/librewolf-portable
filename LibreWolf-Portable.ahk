@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://codeberg.org/ltguillaume/librewolf-portable
-;@Ahk2Exe-SetFileVersion 1.7.2
+;@Ahk2Exe-SetFileVersion 1.7.3
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -180,8 +180,10 @@ UpdateProfile() {
 	; Adjust absolute profile folder paths to current path
 	VarSetCapacity(LibreWolfPathUri, 300*2)
 	DllCall("shlwapi\UrlCreateFromPathW", "Str", LibreWolfPath, "Str", LibreWolfPathUri, "UInt*", 300, "UInt", 0x00040000)	// 0x00040000 = URL_ESCAPE_AS_UTF8
+	LibreWolfPathUri := StrReplace(LibreWolfPathUri, "///", "//")
 	VarSetCapacity(ProfilePathUri, 300*2)
 	DllCall("shlwapi\UrlCreateFromPathW", "Str", ProfilePath, "Str", ProfilePathUri, "UInt*", 300, "UInt", 0x00040000)
+	ProfilePathUri := StrReplace(ProfilePathUri, "///", "//")
 	OverridesPath := "user_pref(""autoadmin.global_config_url"", """ ProfilePathUri "/librewolf.overrides.cfg"");"
 
 	; Skip path adjustments if profile path hasn't changed since last run
@@ -218,6 +220,8 @@ UpdateProfile() {
 		ReplacePaths(ProfilePath "\pkcs11.txt")
 
 	ReplacePaths(ProfilePath "\prefs.js", LibreWolfPathUri, ProfilePathUri, OverridesPath)
+
+	FileDelete, %ProfilePath%\startupCache\*.*
 }
 
 ReplacePaths(FilePath, LibreWolfPathUri = False, ProfilePathUri = False, OverridesPath = False) {
