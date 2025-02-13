@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://codeberg.org/ltguillaume/librewolf-portable
-;@Ahk2Exe-SetFileVersion 1.7.3
+;@Ahk2Exe-SetFileVersion 1.8.0
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -23,9 +23,10 @@ Global Args     := ""
 , MozCommonPath := A_AppDataCommon "\Mozilla-1de4eec8-1241-4177-a864-e594e8d1fb38"
 , ProfilePath   := A_ScriptDir "\Profiles\Default"
 , UpdaterBase   := A_ScriptDir "\LibreWolf-WinUpdater"
-, RegKey        := "HKCU\Software\LibreWolf"
+, RegKey        := "HKCU\Software\Mozilla\LibreWolf"
 , RegKeyFound   := False
 , RegBackedUp   := False
+, Shortcut      := A_AppData "\Microsoft\Windows\Start Menu\Programs\LibreWolf Private Browsing.lnk"
 
 ; Strings
 Global _Title            := "LibreWolf Portable"
@@ -50,7 +51,7 @@ If (ThisLauncherRunning()) {
 	Exit()
 }
 CheckUpdates()
-RegBackup()
+Backup()
 UpdateProfile()
 RunLibreWolf()
 WaitForClose()
@@ -149,7 +150,7 @@ CheckUpdates(Forced = False) {
 	}
 }
 
-RegBackup() {
+Backup() {
 	PrepRegistry:
 	BackupKeyFound := False
 
@@ -174,6 +175,8 @@ RegBackup() {
 		}
 		RegDelete, %RegKey%
 	}
+
+	FileMove, %Shortcut%, %Shortcut%.pbak
 }
 
 UpdateProfile() {
@@ -286,7 +289,7 @@ RunLibreWolf() {
 
 GetCityHash() {
 ;MsgBox, GetCityHash()
-	Loop, Reg, %RegKey%\librewolf\Installer, K
+	Loop, Reg, %RegKey%\Installer, K
 		CityHash := A_LoopRegName
 	If (CityHash) {
 		SetTimer,, Delete
@@ -374,21 +377,50 @@ CleanUp() {
 			RegDelete, %RegKey%.pbak
 	}
 
+	; Remove registry traces
+	RegDelete, HKCU\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Compatibility Assistant\Store, D:\Programs\LibreWolf\LibreWolf-Portable.exe
+
+	Key := "HKCU\Software\Classes\CLSID"
+	Loop, Reg, %Key%, K
+	{
+		RegRead, Data, %Key%\%A_LoopRegName%\InprocServer32
+		If (InStr(Data, LibreWolfPath "\notificationserver.dll"))
+			RegDelete, %Key%\%A_LoopRegName%
+	}
+
+	Key := "HKCU\Software\Classes\AppUserModelId"
+	Loop, Reg, %Key%, K
+	{
+		RegRead, Data, %Key%\%A_LoopRegName%, IconUri
+		If (InStr(Data, LibreWolfPath))
+			RegDelete, %Key%\%A_LoopRegName%
+	}
+
+	RegDeleteVals("HKCU\Software\Mozilla\Firefox\DllPrefetchExperiment")
+	RegDeleteVals("HKCU\Software\Mozilla\Firefox\Launcher")
+	RegDeleteVals("HKCU\Software\Mozilla\Firefox\PreXULSkeletonUISettings")
+
 	; Remove AppData and Temp folders if empty
 	EnvGet, LocalAppData, LocalAppData
 	Folders := [ MozCommonPath, A_AppData "\LibreWolf\Extensions", A_AppData "\LibreWolf", LocalAppData "\LibreWolf", "mozilla-temp-files" ]
 	For i, Folder in Folders
 		FileRemoveDir, %Folder%
 
-	; Remove Start menu shortcut
-	FileDelete, %A_AppData%\Microsoft\Windows\Start Menu\Programs\{-brand-shortcut-name} Private Browsing.lnk
-	FileDelete, %A_AppData%\Microsoft\Windows\Start Menu\Programs\LibreWolf Private Browsing.lnk
+	; Remove/restore Start menu shortcut
+	FileDelete, %Shortcut%
+	FileMove, %Shortcut%.pbak, %Shortcut%
 
 	; Clean-up
 	FileDelete, *jsonlz4.exe
 	FileDelete, %UpdaterBase%.exe.wubak
 
 	Exit()
+}
+
+RegDeleteVals(Key) {
+	Loop, Reg, %Key%
+		If (InStr(A_LoopRegName, LibreWolfExe))
+			RegDelete, %Key%, %A_LoopRegName%
 }
 
 Exit() {
