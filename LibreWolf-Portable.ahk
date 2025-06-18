@@ -379,16 +379,19 @@ CleanUp() {
 
 	; Remove registry traces
 	RegDelete, HKCU\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Compatibility Assistant\Store, D:\Programs\LibreWolf\LibreWolf-Portable.exe
+	RegDeleteVals("HKCU\Software\Mozilla\Firefox\DllPrefetchExperiment")
+	RegDeleteVals("HKCU\Software\Mozilla\Firefox\Launcher")
+	RegDeleteVals("HKCU\Software\Mozilla\Firefox\PreXULSkeletonUISettings")
 
 	Key := "HKCU\Software\Classes\CLSID"
 	Loop, Reg, %Key%, K
 	{
 		RegRead, Data, %Key%\%A_LoopRegName%\InprocServer32
-		If (InStr(Data, LibreWolfPath "\notificationserver.dll"))
+		If (InStr(Data, LibreWolfPath))
 			RegDelete, %Key%\%A_LoopRegName%
 	}
 
-	Key := "HKCU\Software\Classes\AppUserModelId"
+	Key := "HKCU\Software\Classes\AppUserModelId", Data := False
 	Loop, Reg, %Key%, K
 	{
 		RegRead, Data, %Key%\%A_LoopRegName%, IconUri
@@ -396,9 +399,12 @@ CleanUp() {
 			RegDelete, %Key%\%A_LoopRegName%
 	}
 
-	RegDeleteVals("HKCU\Software\Mozilla\Firefox\DllPrefetchExperiment")
-	RegDeleteVals("HKCU\Software\Mozilla\Firefox\Launcher")
-	RegDeleteVals("HKCU\Software\Mozilla\Firefox\PreXULSkeletonUISettings")
+	; Remove ...shortcuts.ini
+	RegRead, Group, HKCU\Software\Microsoft\Windows\CurrentVersion\Group Policy\GroupMembership, Group0
+	If (!ErrorLevel) {
+		Group := SubStr(Group, 1, InStr(Group, "-",, 0))
+		FileDelete, %MozCommonPath%\LibreWolf_%Group%*_shortcuts.ini
+	}
 
 	; Remove AppData and Temp folders if empty
 	EnvGet, LocalAppData, LocalAppData
