@@ -1,7 +1,7 @@
 ; LibreWolf Portable - https://codeberg.org/ltguillaume/librewolf-portable
-;@Ahk2Exe-SetFileVersion 1.8.0
+;@Ahk2Exe-SetFileVersion 1.8.1
 
-;@Ahk2Exe-Base Unicode 32*
+;@Ahk2Exe-Base Unicode 64*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
 ;@Ahk2Exe-SetDescription LibreWolf Portable
 ;@Ahk2Exe-SetMainIcon LibreWolf-Portable.ico
@@ -21,6 +21,7 @@ Global Args     := ""
 , LibreWolfPath := A_ScriptDir "\LibreWolf"
 , LibreWolfExe  := LibreWolfPath "\librewolf.exe"
 , MozCommonPath := A_AppDataCommon "\Mozilla-1de4eec8-1241-4177-a864-e594e8d1fb38"
+, PortableExe   := A_IsCompiled ? A_ScriptFullPath : A_AhkPath
 , ProfilePath   := A_ScriptDir "\Profiles\Default"
 , UpdaterBase   := A_ScriptDir "\LibreWolf-WinUpdater"
 , RegKey        := "HKCU\Software\Mozilla\LibreWolf"
@@ -33,7 +34,7 @@ Global _Title            := "LibreWolf Portable"
 , _GetBuildError         := "Could not determine the build architecture (32/64-bit) of LibreWolf. The file librewolf.exe may be corrupt.`n`n{}"
 , _Waiting               := "Waiting for all LibreWolf processes to close..."
 , _NoDefaultBrowser      := "Could not open your default browser."
-, _GetLibreWolfPathError := "Could not find the path to LibreWolf:`n" LibreWolfPath
+, _GetLibreWolfPathError := "Could not find the LibreWolf executable`n" LibreWolfExe
 , _CreateProfileDirError := "The profile folder does not exist yet and the automatic creation of the folder failed. Check if your Windows user has write permissions to the folder " A_ScriptDir
 , _BackupKeyFound        := "A backup registry key has been found:"
 , _BackupFoundActions    := "This means LibreWolf Portable has probably not been closed correctly. Continue to restore the found backup key after running, or remove the backup key yourself and press Retry to back up the current key."
@@ -72,7 +73,7 @@ Init() {
 	Menu, Tray, Add, Exit, Exit
 	Menu, Tray, Default, Portable
 
-	SplitPath, A_ScriptFullPath,,,, BaseName
+	SplitPath, PortableExe,,,, BaseName
 	IniFile := A_ScriptDir "\" BaseName ".ini"
 	IniRead, HideTrayIcon, %IniFile%, Settings, HideTrayIcon, 0
 	If (!HideTrayIcon)
@@ -312,11 +313,11 @@ LibreWolfRunning(Where := " and not ExecutablePath like ""%\\shims\\%""") {	; Ex
 }
 
 OtherLauncherRunning() {
-	Return LauncherRunning("Name=""LibreWolf-Portable.exe"" and ExecutablePath<>""" DSlash(A_ScriptFullPath) """")
+	Return LauncherRunning("Name=""LibreWolf-Portable.exe"" and ExecutablePath<>""" DSlash(PortableExe) """")
 }
 
 ThisLauncherRunning() {
-	Return LauncherRunning("ExecutablePath=""" DSlash(A_ScriptFullPath) """")
+	Return LauncherRunning("ExecutablePath=""" DSlash(PortableExe) """")
 }
 
 LauncherRunning(Where) {
