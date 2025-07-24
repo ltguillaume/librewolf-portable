@@ -170,6 +170,8 @@ Backup() {
 				Exit()
 			IfMsgBox TryAgain
 				Goto, PrepRegistry
+			IfMsgBox Continue
+				RegBackedUp := True
 		} Else {
 			RunWait, reg copy %RegKey% %RegKey%.pbak /s /f,, Hide
 			RegBackedUp := True
@@ -409,7 +411,7 @@ CleanUp() {
 
 	; Remove AppData and Temp folders if empty
 	EnvGet, LocalAppData, LocalAppData
-	Folders := [ MozCommonPath, A_AppData "\LibreWolf\Extensions", A_AppData "\LibreWolf", LocalAppData "\LibreWolf", "mozilla-temp-files" ]
+	Folders := [ MozCommonPath, A_AppData "\LibreWolf\Extensions", A_AppData "\LibreWolf\Profile Groups", A_AppData "\LibreWolf", LocalAppData "\LibreWolf", "mozilla-temp-files" ]
 	For i, Folder in Folders
 		FileRemoveDir, %Folder%
 

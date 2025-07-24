@@ -1,7 +1,7 @@
 <img src="LibreWolf-Portable.ico" align="right">
 
 # LibreWolf Portable
-by ltGuillaume: [Codeberg](https://codeberg.org/ltGuillaume) | [GitHub](https://github.com/ltGuillaume) | [Buy me a beer](https://buymeacoff.ee/ltGuillaume) 🍺
+by ltGuillaume: [Codeberg](https://codeberg.org/ltguillaume) | [GitHub](https://github.com/ltguillaume) | [Buy me a beer](https://coff.ee/ltguillaume) 🍺
 
 This is the portable launcher that's bundled with LibreWolf. It allows for changing paths (so you can put it on removable storage) and will clean up remnants on the system after closing the browser.
 
@@ -11,7 +11,7 @@ This is the portable launcher that's bundled with LibreWolf. It allows for chang
 
 ## Getting started
 - Download and extract [`librewolf-xxx.x.x-windows-x86_64-portable.zip`](https://librewolf.net/installation/windows/) (second blue button). It already contains a compiled version of the project hosted here.
-- The portable version already includes [`LibreWolf-WinUpdater.exe`](https://codeberg.org/ltGuillaume/LibreWolf-WinUpdater/releases) to automatically apply updates when you start `LibreWolf-Portable.exe` (checks for new versions once a day). If you wish to perform update checks manually instead, just rename WinUpdater to e.g. `LibreWolf-ManualUpdater.exe` and run it when needed.
+- The portable version already includes [`LibreWolf-WinUpdater.exe`](https://codeberg.org/ltguillaume/librewolf-winupdater/releases) to automatically apply updates when you start `LibreWolf-Portable.exe` (checks for new versions once a day). If you wish to perform update checks manually instead, just rename WinUpdater to e.g. `LibreWolf-ManualUpdater.exe` and run it when needed.
 - If you need a portable [`librewolf.overrides.cfg`](https://librewolf.net/docs/settings/), you can put it inside the profile folder (`Profiles\Default` is the standard location).  
 LibreWolf Portable will _not_ use `%USERPROFILE%\.librewolf\librewolf.overrides.cfg`.
 
@@ -32,6 +32,9 @@ You can easily create batch files to quickly load LibreWolf with a specific prof
     HideTrayIcon=1
     ```
 2. Put it in the same folder as `LibreWolf-Portable.exe`
+
+## Pinning LibreWolf to the taskbar
+If you choose to pin a running LibreWolf window to the taskbar, you'll actually pin `librewolf.exe`, not `LibreWolf-Portable.exe`. As such, the next time you start LibreWolf via the pinned taskbar icon, you'll start a non-portable LibreWolf instance which will create a profile inside `%AppData%\LibreWolf\Profiles`. Registry traces and other files that the portable launcher would normally clean up will all stay on your system. While you can manually pin `LibreWolf-Portable.exe` to the taskbar to prevent this, it will cause a separate LibreWolf icon to show up once you run LibreWolf.
 
 ## Credits
 * [LibreWolf](https://librewolf.net) by [ohfp](https://gitlab.com/ohfp), [stanzabird](https://stanzabird.nl), [fxbrit](https://gitlab.com/fxbrit), [maltejur](https://gitlab.com/maltejur), [bgstack15](https://bgstack15.wordpress.com) et al.
