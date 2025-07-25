@@ -368,20 +368,25 @@ CleanUp() {
 		FileRemoveDir, %MozCommonPath%\updates\%CityHash%, 1
 	}
 
-	If (OtherLauncherRunning())
-		Exit()
-
+	; Remove registry traces
+	If (!OtherLauncherRunning()) {
 	; Restore backed up registry key
 ;MsgBox, RegKey: %RegKey%`nRegKeyFound: %RegKeyFound%
-	RegDelete, %RegKey%
-	If (RegKeyFound) {
-		RunWait, reg copy %RegKey%.pbak %RegKey% /s /f,, Hide
-		If (!ErrorLevel)
-			RegDelete, %RegKey%.pbak
+		RegDelete, %RegKey%
+		If (RegKeyFound) {
+			RunWait, reg copy %RegKey%.pbak %RegKey% /s /f,, Hide
+			If (!ErrorLevel)
+				RegDelete, %RegKey%.pbak
+		}
 	}
 
-	; Remove registry traces
-	RegDelete, HKCU\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Compatibility Assistant\Store, D:\Programs\LibreWolf\LibreWolf-Portable.exe
+	RegDelete, HKCU\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Compatibility Assistant\Store, %PortableExe%
+	RegDeleteVals(RegKey "\DllPrefetchExperiment")
+	RegDeleteVals(RegKey "\Launcher")
+	RegDeleteVals(RegKey "\PreXULSkeletonUISettings")
+	RegDeleteVals(RegKey ".pbak\DllPrefetchExperiment")
+	RegDeleteVals(RegKey ".pbak\Launcher")
+	RegDeleteVals(RegKey ".pbak\PreXULSkeletonUISettings")
 	RegDeleteVals("HKCU\Software\Mozilla\Firefox\DllPrefetchExperiment")
 	RegDeleteVals("HKCU\Software\Mozilla\Firefox\Launcher")
 	RegDeleteVals("HKCU\Software\Mozilla\Firefox\PreXULSkeletonUISettings")
@@ -411,7 +416,7 @@ CleanUp() {
 
 	; Remove AppData and Temp folders if empty
 	EnvGet, LocalAppData, LocalAppData
-	Folders := [ MozCommonPath, A_AppData "\LibreWolf\Extensions", A_AppData "\LibreWolf\Profile Groups", A_AppData "\LibreWolf", LocalAppData "\LibreWolf", "mozilla-temp-files" ]
+	Folders := [ MozCommonPath, A_AppData "\LibreWolf\Extensions", A_AppData "\LibreWolf\Profile Groups", A_AppData "\LibreWolf\Profiles", A_AppData "\LibreWolf", LocalAppData "\LibreWolf\Profiles", LocalAppData "\LibreWolf", "mozilla-temp-files" ]
 	For i, Folder in Folders
 		FileRemoveDir, %Folder%
 
