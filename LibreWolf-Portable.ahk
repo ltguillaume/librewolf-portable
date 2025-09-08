@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://codeberg.org/ltguillaume/librewolf-portable
-;@Ahk2Exe-SetFileVersion 1.8.1
+;@Ahk2Exe-SetFileVersion 1.9.0
 
 ;@Ahk2Exe-Base Unicode 64*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -52,6 +52,7 @@ If (ThisLauncherRunning()) {
 	Exit()
 }
 CheckUpdates()
+PreventShutdown()
 Backup()
 UpdateProfile()
 RunLibreWolf()
@@ -149,6 +150,23 @@ CheckUpdates(Forced = False) {
 			Exit()
 		}
 	}
+}
+
+PreventShutdown() {
+; https://www.autohotkey.com/docs/v1/lib/OnMessage.htm#shutdown
+	DllCall("kernel32.dll\SetProcessShutdownParameters", "UInt", 0x1FF, "UInt", 0)	; 0x1FF := Application reserved last shutdown range
+	OnMessage(0x0011, "BlockShutdown")
+}
+
+BlockShutdown(wParam, lParam) {
+	DllCall("ShutdownBlockReasonCreate", "ptr", A_ScriptHwnd, "wstr", _Waiting)
+	OnExit("AllowShutdown")
+	Return False
+}
+
+AllowShutdown() {
+	DllCall("ShutdownBlockReasonDestroy", "ptr", A_ScriptHwnd)
+	OnExit(A_ThisFunc, 0)
 }
 
 Backup() {
