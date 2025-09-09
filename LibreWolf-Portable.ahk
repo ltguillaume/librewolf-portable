@@ -31,6 +31,9 @@ Global Args     := ""
 
 ; Strings
 Global _Title            := "LibreWolf Portable"
+, _PortableHelp          := "Portable Help"
+, _UpdaterHelp           := "WinUpdater Help"
+, _Exit                  := "Exit"
 , _GetBuildError         := "Could not determine the build architecture (32/64-bit) of LibreWolf. The file librewolf.exe may be corrupt.`n`n{}"
 , _Waiting               := "Waiting for all LibreWolf processes to close..."
 , _NoDefaultBrowser      := "Could not open your default browser."
@@ -69,10 +72,10 @@ Init() {
 	SetWorkingDir, %A_Temp%
 	Menu, Tray, Tip, %_Title% %PortableVersion% [%A_ScriptDir%]`n%_Waiting%
 	Menu, Tray, NoStandard
-	Menu, Tray, Add, Portable, About
-	Menu, Tray, Add, WinUpdater, About
-	Menu, Tray, Add, Exit, Exit
-	Menu, Tray, Default, Portable
+	Menu, Tray, Add, %_PortableHelp%, Action
+	Menu, Tray, Add, %_UpdaterHelp%, Action
+	Menu, Tray, Add, %_Exit%, Action
+	Menu, Tray, Default, %_PortableHelp%
 
 	SplitPath, PortableExe,,,, BaseName
 	IniFile := A_ScriptDir "\" BaseName ".ini"
@@ -81,15 +84,22 @@ Init() {
 		Menu, Tray, Icon
 }
 
-About(ItemName) {
-	Url := "https://codeberg.org/ltguillaume/librewolf-" ItemName
-	Try Run, %Url%
-	Catch {
-		RegRead, DefBrowser, HKCR, .html
-		RegRead, DefBrowser, HKCR, %DefBrowser%\Shell\Open\Command
-		Run, % StrReplace(DefBrowser, "%1", Url)
-		If (ErrorLevel)
-			MsgBox, 48, %_Title%, %_NoDefaultBrowser%
+Action(ItemName) {
+	; Tray items
+	Switch ItemName
+	{
+		Case _Exit:
+			Exit
+		Default:
+			Url := "https://codeberg.org/ltguillaume/librewolf-" StrReplace(ItemName, " Help") "#readme"
+			Try Run, % Format("{:L}", Url)
+			Catch {
+				RegRead, DefBrowser, HKCR, .html
+				RegRead, DefBrowser, HKCR, %DefBrowser%\Shell\Open\Command
+				Run, % StrReplace(DefBrowser, "%1", Url)
+				If (ErrorLevel)
+					MsgBox, 48, %_Title%, %_NoDefaultBrowser%
+			}
 	}
 }
 
