@@ -1,7 +1,7 @@
 ; LibreWolf Portable - https://codeberg.org/ltguillaume/librewolf-portable
-;@Ahk2Exe-SetFileVersion 1.9.0
+;@Ahk2Exe-SetFileVersion 1.9.1
 
-;@Ahk2Exe-Base Unicode 64*
+;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
 ;@Ahk2Exe-SetDescription LibreWolf Portable
 ;@Ahk2Exe-SetMainIcon LibreWolf-Portable.ico
@@ -202,9 +202,11 @@ Backup() {
 				RegBackedUp := True
 		} Else {
 			RunWait, reg copy %RegKey% %RegKey%.pbak /s /f,, Hide
-			RegBackedUp := True
+			If (!ErrorLevel)
+				RegBackedUp := True
 		}
-		RegDelete, %RegKey%
+		If (RegBackedUp)
+			RegDelete, %RegKey%
 	}
 
 	FileMove, %Shortcut%, %Shortcut%.pbak
@@ -230,21 +232,22 @@ UpdateProfile() {
 	}
 
 	If (FileExist(ProfilePath "\addonStartup.json.lz4")) {
-		FileInstall, dejsonlz4.exe, dejsonlz4.exe, 0
-		FileInstall, jsonlz4.exe, jsonlz4.exe, 0
-		FileDelete, %A_WorkingDir%\addonStartup.json.lz4
+		FileInstall, dejsonlz4.exe, dejsonlz4.exe, 1
+		FileInstall, jsonlz4.exe, jsonlz4.exe, 1
+		FileDelete, addonStartup.json*
 		FileCopy, %ProfilePath%\addonStartup.json.lz4, %A_WorkingDir%
 
 		RunWait, dejsonlz4.exe addonStartup.json.lz4 addonStartup.json,, Hide
 		If (!FileExist("addonStartup.json"))
-			Die(_FileReadError, A_WorkingDir "addonStartup.json")
+			Die(_FileReadError, A_WorkingDir "\addonStartup.json")
 		If (ReplacePaths("addonStartup.json", LibreWolfPathUri, ProfilePathUri)) {
 			RunWait, jsonlz4.exe addonStartup.json addonStartup.json.lz4,, Hide
 			FileMove, addonStartup.json.lz4, %ProfilePath%, 1
 			If (ErrorLevel)
 				Die(_FileWriteError, ProfilePath "addonStartup.json.lz4")
 		}
-		FileDelete, addonStartup.json
+		FileDelete, *jsonlz4.exe
+		FileDelete, addonStartup.json*
 	}
 
 	If (FileExist(ProfilePath "\extensions.json"))
@@ -427,7 +430,7 @@ CleanUp() {
 			RegDelete, %Key%\%A_LoopRegName%
 	}
 
-	Key := "HKCU\Software\Classes\AppUserModelId", Data := False
+	Key := "HKCU\Software\Classes\AppUserModelId", Data := ""
 	Loop, Reg, %Key%, K
 	{
 		RegRead, Data, %Key%\%A_LoopRegName%, IconUri
@@ -453,7 +456,6 @@ CleanUp() {
 	FileMove, %Shortcut%.pbak, %Shortcut%
 
 	; Clean-up
-	FileDelete, *jsonlz4.exe
 	FileDelete, %UpdaterBase%.exe.wubak
 
 	Exit()
