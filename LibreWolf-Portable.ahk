@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://codeberg.org/ltguillaume/librewolf-portable
-;@Ahk2Exe-SetFileVersion 1.9.1
+;@Ahk2Exe-SetFileVersion 1.10.0
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -34,6 +34,7 @@ Global _Title            := "LibreWolf Portable"
 , _PortableHelp          := "Portable Help"
 , _UpdaterHelp           := "WinUpdater Help"
 , _Exit                  := "Exit"
+, _ExitQuestion          := "Are you sure you want to close the launcher now? It's best to close all LibreWolf processes and then let this launcher clean up."
 , _GetBuildError         := "Could not determine the build architecture (32/64-bit) of LibreWolf. The file librewolf.exe may be corrupt.`n`n{}"
 , _Waiting               := "Waiting for all LibreWolf processes to close..."
 , _NoDefaultBrowser      := "Could not open your default browser."
@@ -89,7 +90,10 @@ Action(ItemName) {
 	Switch ItemName
 	{
 		Case _Exit:
-			Exit
+			MsgBox, 36, %_Title%, %_ExitQuestion%
+			IfMsgBox, Yes
+				ExitApp
+			Return
 		Default:
 			Url := "https://codeberg.org/ltguillaume/librewolf-" StrReplace(ItemName, " Help") "#readme"
 			Try Run, % Format("{:L}", Url)
@@ -221,14 +225,23 @@ UpdateProfile() {
 	DllCall("shlwapi\UrlCreateFromPathW", "Str", ProfilePath, "Str", ProfilePathUri, "UInt*", 300, "UInt", 0x00040000)
 	ProfilePathUri := StrReplace(ProfilePathUri, "///", "//")
 	OverridesPath := "user_pref(""autoadmin.global_config_url"", """ ProfilePathUri "/librewolf.overrides.cfg"");"
+	JumpListPref := "browser.taskbar.lists.frequent.enabled"
+	NoJumpList := "user_pref(""" JumpListPref """, false);"
 
 	; Skip path adjustments if profile path hasn't changed since last run
 	If (FileExist(ProfilePath "\prefs.js")) {
 		FileRead, PrefsFile, %ProfilePath%\prefs.js
+
+		; Prevent traces via jump list registry keys
+		If (!InStr(PrefsFile, JumpListPref))
+			FileAppend, %NoJumpList%`n, %ProfilePath%\prefs.js
+
 		If (InStr(PrefsFile, OverridesPath)) {
-;MsgBox, Profile doesn't need to be updated.
+;MsgBox, Profile paths don't need to be updated.
 			Return
 		}
+
+		PrefsFile := ""
 	}
 
 	If (FileExist(ProfilePath "\addonStartup.json.lz4")) {
@@ -246,7 +259,6 @@ UpdateProfile() {
 			If (ErrorLevel)
 				Die(_FileWriteError, ProfilePath "addonStartup.json.lz4")
 		}
-		FileDelete, *jsonlz4.exe
 		FileDelete, addonStartup.json*
 	}
 
@@ -256,14 +268,14 @@ UpdateProfile() {
 	If (FileExist(ProfilePath "\pkcs11.txt"))
 		ReplacePaths(ProfilePath "\pkcs11.txt")
 
-	ReplacePaths(ProfilePath "\prefs.js", LibreWolfPathUri, ProfilePathUri, OverridesPath)
+	ReplacePaths(ProfilePath "\prefs.js", LibreWolfPathUri, ProfilePathUri, OverridesPath, NoJumpList)
 
 	FileDelete, %ProfilePath%\startupCache\*.*
 }
 
-ReplacePaths(FilePath, LibreWolfPathUri = False, ProfilePathUri = False, OverridesPath = False) {
+ReplacePaths(FilePath, LibreWolfPathUri = False, ProfilePathUri = False, OverridesPath = False, NoJumpList = False) {
 	If (FilePath = ProfilePath "\prefs.js" And !FileExist(FilePath)) {
-		FileAppend, %OverridesPath%, %FilePath%
+		FileAppend, %OverridesPath%`n%NoJumpList%, %FilePath%
 		If (ErrorLevel)
 			Die(_FileWriteError, FilePath)
 		Return
@@ -327,7 +339,7 @@ GetCityHash() {
 		CityHash := A_LoopRegName
 	If (CityHash) {
 		SetTimer,, Delete
-;MsgBox, CityHash = %CityHash%
+;InputBox, CityHash, %_Title%, CityHash:,,,,,,,, %CityHash%
 	}
 }
 
@@ -389,15 +401,11 @@ Die(Error, Var := False) {
 }
 
 CleanUp() {
+	EnvGet, LocalAppData, LocalAppData
+
 	; Wait until all launcher instances are closed before restoring backed up registry key
 	While (RegBackedUp And Pid := OtherLauncherRunning())
 		Process, WaitClose, %Pid%
-
-	; Remove files with CityHash of this LibreWolf instance
-	If (CityHash) {
-		FileDelete, %MozCommonPath%\*%CityHash%*.*
-		FileRemoveDir, %MozCommonPath%\updates\%CityHash%, 1
-	}
 
 	; Remove registry traces
 	If (!OtherLauncherRunning()) {
@@ -411,7 +419,29 @@ CleanUp() {
 		}
 	}
 
+	; Remove files and keys with CityHash of this LibreWolf instance
+	If (CityHash) {
+		FileDelete, %A_AppData%\Microsoft\Windows\Recent\%CityHash%*.*
+		FileDelete, %LocalAppData%\Packages\Microsoft.Windows.Search*\LocalState\AppIconCache\100\%CityHash%*.*
+		FileDelete, %MozCommonPath%\*%CityHash%*.*
+		FileRemoveDir, %MozCommonPath%\updates\%CityHash%, 1
+
+;		Recent  := A_AppData "\Microsoft\Windows\Recent"
+;		Folders := [ "", "AutomaticDestinations", "CustomDestinations" ]	; TODO - These are random filenames, could search file contents for path and CityHash
+;		For i, Folder in Folders
+;			FileDelete, %Recent%\%Folder%\%CityHash%*.*
+
+		CurVer := "HKCU\Software\Microsoft\Windows\CurrentVersion"
+		Keys   := [ "Explorer\FeatureUsage\AppBadgeUpdated", "Explorer\FeatureUsage\AppLaunch", "Explorer\FeatureUsage\AppSwitched", "Explorer\FeatureUsage\ShowJumpView", "Search\JumplistData" ]
+		For i, Key in Keys
+		{
+			RegDelete, %CurVer%\%Key%, %CityHash%
+			RegDelete, %CurVer%\%Key%, %CityHash%;PrivateBrowsingAUMID
+		}
+	}
+
 	RegDelete, HKCU\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Compatibility Assistant\Store, %PortableExe%
+	RegDeleteNested("HKCU\Software\Classes\AppUserModelId")
 	RegDeleteVals(RegKey "\DllPrefetchExperiment")
 	RegDeleteVals(RegKey "\Launcher")
 	RegDeleteVals(RegKey "\PreXULSkeletonUISettings")
@@ -446,7 +476,6 @@ CleanUp() {
 	}
 
 	; Remove AppData and Temp folders if empty
-	EnvGet, LocalAppData, LocalAppData
 	Folders := [ MozCommonPath, A_AppData "\LibreWolf\Extensions", A_AppData "\LibreWolf\Profile Groups", A_AppData "\LibreWolf\Profiles", A_AppData "\LibreWolf", LocalAppData "\LibreWolf\Profiles", LocalAppData "\LibreWolf", "mozilla-temp-files" ]
 	For i, Folder in Folders
 		FileRemoveDir, %Folder%
@@ -456,9 +485,20 @@ CleanUp() {
 	FileMove, %Shortcut%.pbak, %Shortcut%
 
 	; Clean-up
+	FileDelete, *jsonlz4.exe
 	FileDelete, %UpdaterBase%.exe.wubak
 
 	Exit()
+}
+
+RegDeleteNested(Key) {
+	Loop, Reg, %Key%
+	{
+		CurKey := A_LoopRegName
+		Loop, Reg, %CurKey%
+			If (InStr(A_LoopRegName, LibreWolfExe))
+				RegDelete, %Key%, %CurKey%
+	}
 }
 
 RegDeleteVals(Key) {

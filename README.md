@@ -37,6 +37,6 @@ You can easily create batch files to quickly load LibreWolf with a specific prof
 If you choose to pin a running LibreWolf window to the taskbar, you'll actually pin `librewolf.exe`, not `LibreWolf-Portable.exe`. As such, the next time you start LibreWolf via the pinned taskbar icon, you'll start a non-portable LibreWolf instance which will create a profile inside `%AppData%\LibreWolf\Profiles`. Registry traces and other files that the portable launcher would normally clean up will all stay on your system. While you can manually pin `LibreWolf-Portable.exe` to the taskbar to prevent this, it will cause a separate LibreWolf icon to show up once you run LibreWolf.
 
 ## Credits
-* [LibreWolf](https://librewolf.net) by [ohfp](https://gitlab.com/ohfp), [stanzabird](https://stanzabird.nl), [fxbrit](https://gitlab.com/fxbrit), [maltejur](https://gitlab.com/maltejur), [bgstack15](https://bgstack15.wordpress.com) et al.
-* Icon by the [LibreWolf Community](https://gitlab.com/librewolf-community/branding/-/tree/master/icon)
+* [LibreWolf](https://librewolf.net) by the [LibreWolf Community](https://librewolf.net/#core-contributors)
+* [Icon](https://codeberg.org/librewolf/branding) by the [LibreWolf Community](https://librewolf.net/#core-contributors)
 * The included [dejsonlz4](https://github.com/avih/dejsonlz4/) (BSD 2-Clause "Simplified" License) and jsonlz4 are the binaries from [PortableApps.com Firefox®](https://portableapps.com/apps/internet/firefox_portable) (GPLv2)
