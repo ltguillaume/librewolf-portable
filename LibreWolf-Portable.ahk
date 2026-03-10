@@ -118,13 +118,10 @@ CheckPaths() {
 			Die(_GetLibreWolfPathError)
 	}
 
-	Call := DllCall("GetBinaryTypeW", "Str", "\\?\" LibreWolfExe, "UInt *", Build)
-	If (Call And Build = 6)
-		SetRegView, 64
-	Else If (Call And Build = 0)
+	If (GetCurrentBuild() = "i686")
 		SetRegView, 32
 	Else
-		Die(_GetBuildError, "Call = " Call ", Build = " Build)
+		SetRegView, 64
 
 	; Check for profile path argument
 	If (A_Args.Length() > 1)
@@ -143,6 +140,34 @@ CheckPaths() {
 		If (ErrorLevel)
 			Die(_CreateProfileDirError)
 	}
+}
+
+GetCurrentBuild() {
+	; by RaptorX https://www.autohotkey.com/boards/viewtopic.php?t=132434
+	Try {
+		File := FileOpen(LibreWolfExe, "r")
+		If (File) {
+			File.Seek(0x3C, 0)	; MS-DOS header
+			Offset := File.ReadUInt()
+			File.Seek(Offset, 0)	; PE signature
+			If (File.ReadUInt() = 0x4550) {	; "PE\0\0"
+				File.Seek(Offset + 4, 0)	; Machine field from COFF header
+				Machine := File.ReadUShort()
+			}
+			File.Close()
+
+			Switch Machine {
+				Case 0x8664:
+					Return "x86_64"
+				Case 0x014C:
+					Return "i686"
+				Case 0xAA64:
+					Return "arm64"
+			}
+		}
+		Die(_GetBuildError)
+	} Catch e
+		Die(_GetBuildError ": " e.Message)
 }
 
 CheckArgs() {
