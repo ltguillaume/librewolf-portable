@@ -11,7 +11,7 @@ This is the portable launcher that's bundled with LibreWolf. It allows for chang
 
 ## Getting started
 - Download and extract [`librewolf-xxx.x.x-windows-x86_64-portable.zip`](https://librewolf.net/installation/windows/) (second blue button). It already contains a compiled version of the project hosted here.
-- The portable version already includes [`LibreWolf-WinUpdater.exe`](https://codeberg.org/ltguillaume/librewolf-winupdater/releases) to automatically apply updates when you start `LibreWolf-Portable.exe` (checks for new versions once a day). If you wish to perform update checks manually instead, just rename WinUpdater to e.g. `LibreWolf-ManualUpdater.exe` and run it when needed.
+- The portable version already includes [`LibreWolf-WinUpdater.exe`](https://codeberg.org/librewolf/librewolf-winupdater/releases) to automatically apply updates when you start `LibreWolf-Portable.exe` (checks for new versions once a day). If you wish to perform update checks manually instead, just rename WinUpdater to e.g. `LibreWolf-ManualUpdater.exe` and run it when needed.
 - If you need a portable [`librewolf.overrides.cfg`](https://librewolf.net/docs/settings/), you can put it inside the profile folder (`Profiles\Default` is the standard location).  
 LibreWolf Portable will _not_ use `%USERPROFILE%\.librewolf\librewolf.overrides.cfg`.
 
