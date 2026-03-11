@@ -72,7 +72,7 @@ jobs:
           direction: upload
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
           gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
-          token: ${{ secrets.REPO_DEPLOY_TOKEN }}
+          token: ${{ secrets.FORGE_TOKEN }}
           tag: ${{ env.APP_VERSION }}
           title: ${{ env.APP_NAME }} ${{ env.APP_VERSION }}
           override: true
