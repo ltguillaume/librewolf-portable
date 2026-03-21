@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://codeberg.org/librewolf/librewolf-portable
-;@Ahk2Exe-SetFileVersion 1.10.0
+;@Ahk2Exe-SetFileVersion 1.10.1
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
