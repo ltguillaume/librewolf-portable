@@ -1,8 +1,9 @@
-; LibreWolf Portable - https://codeberg.org/librewolf/librewolf-portable
+; LibreWolf Portable - https://codeberg.org/librewolf/portable
 ;@Ahk2Exe-SetFileVersion 1.10.1
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
+;@Ahk2Exe-SetCopyright ltguillaume
 ;@Ahk2Exe-SetDescription LibreWolf Portable
 ;@Ahk2Exe-SetMainIcon LibreWolf-Portable.ico
 ;@Ahk2Exe-SetOrigFilename LibreWolf-Portable.exe
@@ -95,7 +96,7 @@ Action(ItemName) {
 				ExitApp
 			Return
 		Default:
-			Url := "https://codeberg.org/librewolf/librewolf-" StrReplace(ItemName, " Help") "#readme"
+			Url := "https://codeberg.org/librewolf/" StrReplace(ItemName, " Help") "#readme"
 			Try Run, % Format("{:L}", Url)
 			Catch {
 				RegRead, DefBrowser, HKCR, .html
