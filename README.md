@@ -15,6 +15,9 @@ This is the portable launcher that's bundled with LibreWolf. It allows for chang
 - If you need a portable [`librewolf.overrides.cfg`](https://librewolf.net/docs/settings/), you can put it inside the profile folder (`Profiles\Default` is the standard location).  
 LibreWolf Portable will _not_ use `%USERPROFILE%\.librewolf\librewolf.overrides.cfg`.
 
+## File/protocol associations
+If you want to make LibreWolf Portable available to open `.htm(l)` files, `http(s)` and `mailto:` links etc., please follow [these instructions](https://codeberg.org/librewolf/portable/issues/1).
+
 ## Using multiple profiles
 You can easily create batch files to quickly load LibreWolf with a specific profile. An example, using the profile name `Custom Profile #1`:
 1. Create a new file called `LibreWolf Custom Profile #1.cmd` with the following contents:  
