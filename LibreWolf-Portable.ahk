@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://codeberg.org/librewolf/portable
-;@Ahk2Exe-SetFileVersion 1.10.1
+;@Ahk2Exe-SetFileVersion 1.10.2
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -70,7 +70,7 @@ DSlash(Path) {
 Init() {
 	FileEncoding, UTF-8-RAW
 	FileGetVersion, PortableVersion, %A_ScriptFullPath%
-	PortableVersion := SubStr(PortableVersion, 1, -2)
+	PortableVersion := RegExReplace(PortableVersion, "(\.0)+$")
 	SetWorkingDir, %A_Temp%
 	Menu, Tray, Tip, %_Title% %PortableVersion% [%A_ScriptDir%]`n%_Waiting%
 	Menu, Tray, NoStandard
