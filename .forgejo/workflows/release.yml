@@ -89,8 +89,7 @@ jobs:
         uses: actions/forgejo-release@v2.11.3
         with:
           direction: upload
-          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
-          gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
+          gpg-private-key: ${{ secrets.WINDOWS_PRIVATE_KEY }}
           token: ${{ secrets.FORGE_TOKEN }}
           tag: ${{ env.APP_VERSION }}
           title: ${{ env.APP_NAME }} ${{ env.APP_VERSION }}
@@ -101,7 +100,7 @@ jobs:
             - [x] 
             
             > [!NOTE]
-            > The release zip is signed and can be verified using GPG ([instructions](https://codeberg.org/ltguillaume/resources/src/branch/main/signing)).
+            > The release zip is signed and can be verified using GPG. The public keys can be found on [keys.openpgp.org](https://keys.openpgp.org/search?q=gpg%40librewolf.net), [keyserver.ubuntu.com](https://keyserver.ubuntu.com/pks/lookup?search=gpg%40librewolf.net&fingerprint=on&op=index) and directly via https://gpg.librewolf.net.
             > [Link to VirusTotal Report](${{ env.VT_URL }})
             
             > [!CAUTION]
