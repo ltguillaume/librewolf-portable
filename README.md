@@ -28,7 +28,11 @@ You can easily create batch files to quickly load LibreWolf with a specific prof
 - Change `Custom Profile #1` to whatever you like, as long as the used characters can be part of a folder name (e.g. no `:\/"`).
 - Absolute paths can also be used, such as `-P "C:\Users\Username\LibreWolf\Profiles\Custom Profile #1"`.
 
-## Hiding the launcher's tray icon
+## Pinning LibreWolf to the taskbar
+If you choose to pin a running LibreWolf window to the taskbar, you'll actually pin `librewolf.exe`, not `LibreWolf-Portable.exe`. As such, the next time you start LibreWolf via the pinned taskbar icon, you'll start a non-portable LibreWolf instance which will create a profile inside `%AppData%\LibreWolf\Profiles`. Registry traces and other files that the portable launcher would normally clean up will all stay on your system. While you can manually pin `LibreWolf-Portable.exe` to the taskbar to prevent this, it will cause a separate LibreWolf icon to show up once you run LibreWolf.
+
+## Settings
+### Hiding the launcher's tray icon
 1. Create a new file called `LibreWolf-Portable.ini` with the following contents:
     ```
     [Settings]
@@ -36,8 +40,9 @@ You can easily create batch files to quickly load LibreWolf with a specific prof
     ```
 2. Put it in the same folder as `LibreWolf-Portable.exe`
 
-## Pinning LibreWolf to the taskbar
-If you choose to pin a running LibreWolf window to the taskbar, you'll actually pin `librewolf.exe`, not `LibreWolf-Portable.exe`. As such, the next time you start LibreWolf via the pinned taskbar icon, you'll start a non-portable LibreWolf instance which will create a profile inside `%AppData%\LibreWolf\Profiles`. Registry traces and other files that the portable launcher would normally clean up will all stay on your system. While you can manually pin `LibreWolf-Portable.exe` to the taskbar to prevent this, it will cause a separate LibreWolf icon to show up once you run LibreWolf.
+## Issues
+### Anti-cheat software
+You might get annoyed by some anti-cheat software. It may wrongfully point at this launcher, because it is built upon AutoHotkey, which _can_ be used to cheat in games.
 
 ## Credits
 * [LibreWolf](https://librewolf.net) by the [LibreWolf Community](https://librewolf.net/#core-contributors)

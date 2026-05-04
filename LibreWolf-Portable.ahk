@@ -371,8 +371,10 @@ GetCityHash() {
 }
 
 WaitForClose() {
-	While (Pid := LibreWolfRunning())
+	While (Pid := LibreWolfRunning()) {
+		ClearMem()
 		Process, WaitClose, %Pid%
+	}
 	CleanUp()
 }
 
@@ -431,8 +433,10 @@ CleanUp() {
 	EnvGet, LocalAppData, LocalAppData
 
 	; Wait until all launcher instances are closed before restoring backed up registry key
-	While (RegBackedUp And Pid := OtherLauncherRunning())
+	While (RegBackedUp And Pid := OtherLauncherRunning()) {
+		ClearMem()
 		Process, WaitClose, %Pid%
+	}
 
 	; Remove registry traces
 	If (!OtherLauncherRunning()) {
@@ -516,6 +520,12 @@ CleanUp() {
 	FileDelete, %UpdaterBase%.exe.wubak
 
 	Exit()
+}
+
+ClearMem() {
+	Proc := DllCall("OpenProcess", "UInt", 0x001F0FFF, "Int", 0, "Int", DllCall("GetCurrentProcessId"))
+	DllCall("SetProcessWorkingSetSize", "UInt", Proc, "Int", -1, "Int", -1)
+	DllCall("CloseHandle", "Int", Proc)
 }
 
 RegDeleteNested(Key) {
