@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://codeberg.org/librewolf/portable
-;@Ahk2Exe-SetFileVersion 1.10.2
+;@Ahk2Exe-SetFileVersion 1.10.3
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -349,6 +349,7 @@ RunLibreWolf() {
 	If (LibreWolfRunning() And !ThisLibreWolfRunning())
 		Args := "--new-instance " Args
 
+	ReleaseMem()
 ;MsgBox, %LibreWolfExe% -profile "%ProfilePath%" %Args%
 	RunWait, %LibreWolfExe% -Profile "%ProfilePath%" %Args%,, UseErrorLevel
 
@@ -372,7 +373,7 @@ GetCityHash() {
 
 WaitForClose() {
 	While (Pid := LibreWolfRunning()) {
-		ClearMem()
+		ReleaseMem()
 		Process, WaitClose, %Pid%
 	}
 	CleanUp()
@@ -434,7 +435,7 @@ CleanUp() {
 
 	; Wait until all launcher instances are closed before restoring backed up registry key
 	While (RegBackedUp And Pid := OtherLauncherRunning()) {
-		ClearMem()
+		ReleaseMem()
 		Process, WaitClose, %Pid%
 	}
 
@@ -522,7 +523,7 @@ CleanUp() {
 	Exit()
 }
 
-ClearMem() {
+ReleaseMem() {
 	Proc := DllCall("OpenProcess", "UInt", 0x001F0FFF, "Int", 0, "Int", DllCall("GetCurrentProcessId"))
 	DllCall("SetProcessWorkingSetSize", "UInt", Proc, "Int", -1, "Int", -1)
 	DllCall("CloseHandle", "Int", Proc)
