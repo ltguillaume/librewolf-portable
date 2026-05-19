@@ -1,3 +1,4 @@
+[Getting started](#getting-started) • [Settings](#settings) • [Issues](#issues) • [Credits](#credits)
 <img src="LibreWolf-Portable.ico" align="right">
 
 # LibreWolf Portable
