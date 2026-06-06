@@ -62,7 +62,7 @@ PreventShutdown()
 Backup()
 UpdateProfile()
 RunLibreWolf()
-WaitForClose()
+BrowserWaitClose()
 
 DSlash(Path) {
 	Return StrReplace(Path, "\", "\\")
@@ -371,12 +371,20 @@ GetCityHash() {
 	}
 }
 
-WaitForClose() {
-	While (Pid := LibreWolfRunning()) {
-		ReleaseMem()
-		Process, WaitClose, %Pid%
-	}
+BrowserWaitClose() {
+	While (ProcessId := LibreWolfRunning())
+		ProcessWaitClose(ProcessId)
 	CleanUp()
+}
+
+ProcessWaitClose(ProcessId) {
+	ReleaseMem()
+	ProcessWait:
+	Process, Exist, %ProcessId%
+	If (ErrorLevel = ProcessId) {
+		Sleep, 1000
+		Goto, ProcessWait
+	}
 }
 
 ThisLibreWolfRunning() {
@@ -434,10 +442,8 @@ CleanUp() {
 	EnvGet, LocalAppData, LocalAppData
 
 	; Wait until all launcher instances are closed before restoring backed up registry key
-	While (RegBackedUp And Pid := OtherLauncherRunning()) {
-		ReleaseMem()
-		Process, WaitClose, %Pid%
-	}
+	While (RegBackedUp And ProcessId := OtherLauncherRunning())
+		ProcessWaitClose(ProcessId)
 
 	; Remove registry traces
 	If (!OtherLauncherRunning()) {
