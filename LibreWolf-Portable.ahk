@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://codeberg.org/librewolf/portable
-;@Ahk2Exe-SetFileVersion 1.10.3
+;@Ahk2Exe-SetFileVersion 1.10.4
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -472,6 +472,7 @@ CleanUp() {
 		}
 	}
 
+	RegDelete, HKCU\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Compatibility Assistant\Store, %LibreWolfExe%
 	RegDelete, HKCU\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Compatibility Assistant\Store, %PortableExe%
 	RegDeleteNested("HKCU\Software\Classes\AppUserModelId")
 	RegDeleteVals(RegKey "\DllPrefetchExperiment")
