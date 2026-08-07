@@ -32,7 +32,7 @@ Global Args     := ""
 , Shortcut      := A_AppData "\Microsoft\Windows\Start Menu\Programs\LibreWolf Private Browsing.lnk"
 
 ; Strings
-Global _Title            := "LibreWolf Portable"
+Global _Title            := "LibreWolf Portable {}"
 , _PortableHelp          := "Portable Help"
 , _UpdaterHelp           := "WinUpdater Help"
 , _Exit                  := "Exit"
@@ -72,8 +72,9 @@ Init() {
 	FileEncoding, UTF-8-RAW
 	FileGetVersion, PortableVersion, %A_ScriptFullPath%
 	PortableVersion := RegExReplace(PortableVersion, "(\.0)+$")
+	_Title := StrReplace(_Title, "{}", PortableVersion)
 	SetWorkingDir, %A_Temp%
-	Menu, Tray, Tip, %_Title% %PortableVersion% [%A_ScriptDir%]`n%_Waiting%
+	Menu, Tray, Tip, %_Title% [%A_ScriptDir%]`n%_Waiting%
 	Menu, Tray, NoStandard
 	Menu, Tray, Add, %_PortableHelp%, Action
 	Menu, Tray, Add, %_UpdaterHelp%, Action
