@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://codeberg.org/librewolf/portable
-;@Ahk2Exe-SetFileVersion 1.10.4
+;@Ahk2Exe-SetFileVersion 1.10.5
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -26,7 +26,7 @@ Global Args     := ""
 , PortableExe   := A_IsCompiled ? A_ScriptFullPath : A_AhkPath
 , ProfilePath   := A_ScriptDir "\Profiles\Default"
 , UpdaterBase   := A_ScriptDir "\LibreWolf-WinUpdater"
-, RegKey        := "HKCU\Software\Mozilla\LibreWolf"
+, RegKey        := "HKCU\Software\LibreWolf\LibreWolf"
 , RegKeyFound   := False
 , RegBackedUp   := False
 , Shortcut      := A_AppData "\Microsoft\Windows\Start Menu\Programs\LibreWolf Private Browsing.lnk"
@@ -200,13 +200,13 @@ PreventShutdown() {
 }
 
 BlockShutdown(wParam, lParam) {
-	DllCall("ShutdownBlockReasonCreate", "ptr", A_ScriptHwnd, "wstr", _Waiting)
+	DllCall("ShutdownBlockReasonCreate", "Ptr", A_ScriptHwnd, "WStr", _Waiting)
 	OnExit("AllowShutdown")
 	Return False
 }
 
 AllowShutdown() {
-	DllCall("ShutdownBlockReasonDestroy", "ptr", A_ScriptHwnd)
+	DllCall("ShutdownBlockReasonDestroy", "Ptr", A_ScriptHwnd)
 	OnExit(A_ThisFunc, 0)
 }
 
@@ -478,6 +478,7 @@ CleanUp() {
 		}
 	}
 
+	RegDelete, HKCU\Software\Mozilla\LibreWolf
 	RegDelete, HKCU\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Compatibility Assistant\Store, %LibreWolfExe%
 	RegDelete, HKCU\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Compatibility Assistant\Store, %PortableExe%
 	RegDeleteNested("HKCU\Software\Classes\AppUserModelId")
