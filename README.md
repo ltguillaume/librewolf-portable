@@ -12,12 +12,12 @@ This is the portable launcher that's bundled with LibreWolf. It allows for chang
 
 ## Getting started
 - Download and extract [`librewolf-xxx.x.x-windows-x86_64-portable.zip`](https://librewolf.net/installation/windows/) (second blue button). It already contains a compiled version of the project hosted here.
-- The portable version already includes [`LibreWolf-WinUpdater.exe`](https://codeberg.org/librewolf/librewolf-winupdater/releases) to automatically apply updates when you start `LibreWolf-Portable.exe` (checks for new versions once a day). If you wish to perform update checks manually instead, just rename WinUpdater to e.g. `LibreWolf-ManualUpdater.exe` and run it when needed.
+- The portable version already includes [`LibreWolf-WinUpdater.exe`](https://librewolf.dev/librewolf/winupdater/releases) to automatically apply updates when you start `LibreWolf-Portable.exe` (checks for new versions once a day). If you wish to perform update checks manually instead, just rename WinUpdater to e.g. `LibreWolf-ManualUpdater.exe` and run it when needed.
 - If you need a portable [`librewolf.overrides.cfg`](https://librewolf.net/docs/settings/), you can put it inside the profile folder (`Profiles\Default` is the standard location).  
 LibreWolf Portable will _not_ use `%USERPROFILE%\.librewolf\librewolf.overrides.cfg`.
 
 ## File/protocol associations
-If you want to make LibreWolf Portable available to open `.htm(l)` files, `http(s)` and `mailto:` links etc., please follow [these instructions](https://codeberg.org/librewolf/portable/issues/1).
+If you want to make LibreWolf Portable available to open `.htm(l)` files, `http(s)` and `mailto:` links etc., please follow [these instructions](https://librewolf.dev/librewolf/portable/issues/1).
 
 ## Using multiple profiles
 You can easily create batch files to quickly load LibreWolf with a specific profile. An example, using the profile name `Custom Profile #1`:
@@ -47,5 +47,5 @@ You might get annoyed by some anti-cheat software. It may wrongfully point at th
 
 ## Credits
 * [LibreWolf](https://librewolf.net) by the [LibreWolf Community](https://librewolf.net/#core-contributors)
-* [Icon](https://codeberg.org/librewolf/branding) by the [LibreWolf Community](https://librewolf.net/#core-contributors)
+* [Icon](https://librewolf.dev/librewolf/branding) by the [LibreWolf Community](https://librewolf.net/#core-contributors)
 * The included [dejsonlz4](https://github.com/avih/dejsonlz4/) (BSD 2-Clause "Simplified" License) and jsonlz4 are the binaries from [PortableApps.com Firefox®](https://portableapps.com/apps/internet/firefox_portable) (GPLv2)
