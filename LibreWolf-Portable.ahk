@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://librewolf.dev/librewolf/portable
-;@Ahk2Exe-SetFileVersion 1.10.5
+;@Ahk2Exe-SetFileVersion 1.10.6
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -29,7 +29,7 @@ Global Args     := ""
 , RegKey        := "HKCU\Software\LibreWolf\LibreWolf"
 , RegKeyFound   := False
 , RegBackedUp   := False
-, Shortcut      := A_AppData "\Microsoft\Windows\Start Menu\Programs\LibreWolf Private Browsing.lnk"
+, StartMenu     := A_AppData "\Microsoft\Windows\Start Menu\Programs\LibreWolf*.lnk"
 
 ; Strings
 Global _Title            := "LibreWolf Portable {}"
@@ -241,7 +241,8 @@ Backup() {
 			RegDelete, %RegKey%
 	}
 
-	FileMove, %Shortcut%, %Shortcut%.pbak
+	Loop, Files, %StartMenu%
+		FileMove, %A_LoopFilePath%, % StrReplace(A_LoopFilePath, ".lnk", ".lnk.pbak"), 1
 }
 
 UpdateProfile() {
@@ -522,8 +523,10 @@ CleanUp() {
 		FileRemoveDir, %Folder%
 
 	; Remove/restore Start menu shortcut
-	FileDelete, %Shortcut%
-	FileMove, %Shortcut%.pbak, %Shortcut%
+	Loop, Files, %StartMenu%
+		FileDelete, %A_LoopFilePath%
+	Loop, Files, %StartMenu%.pbak
+		FileMove, %A_LoopFilePath%, % StrReplace(A_LoopFilePath, ".lnk.pbak", ".lnk"), 1
 
 	; Clean-up
 	FileDelete, *jsonlz4.exe
