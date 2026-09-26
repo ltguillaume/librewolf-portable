@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://librewolf.dev/librewolf/portable
-;@Ahk2Exe-SetFileVersion 1.10.6
+;@Ahk2Exe-SetFileVersion 1.11.0
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -253,7 +253,8 @@ UpdateProfile() {
 	VarSetCapacity(ProfilePathUri, 300*2)
 	DllCall("shlwapi\UrlCreateFromPathW", "Str", ProfilePath, "Str", ProfilePathUri, "UInt*", 300, "UInt", 0x00040000)
 	ProfilePathUri := StrReplace(ProfilePathUri, "///", "//")
-	OverridesPath := "user_pref(""autoadmin.global_config_url"", """ ProfilePathUri "/librewolf.overrides.cfg"");"
+	OverridesCfgPath := "user_pref(""autoadmin.global_config_url"", """ ProfilePathUri "/librewolf.overrides.cfg"");"
+	OverridesJsonPath := "user_pref(""librewolf.policy.overrides"", """ ProfilePathUri "/librewolf.overrides.json"");"
 	JumpListPref := "browser.taskbar.lists.frequent.enabled"
 	NoJumpList := "user_pref(""" JumpListPref """, false);"
 
@@ -265,7 +266,7 @@ UpdateProfile() {
 		If (!InStr(PrefsFile, JumpListPref))
 			FileAppend, %NoJumpList%`n, %ProfilePath%\prefs.js
 
-		If (InStr(PrefsFile, OverridesPath)) {
+		If (InStr(PrefsFile, OverridesCfgPath) And InStr(PrefsFile, OverridesJsonPath)) {
 ;MsgBox, Profile paths don't need to be updated.
 			Return
 		}
@@ -297,14 +298,14 @@ UpdateProfile() {
 	If (FileExist(ProfilePath "\pkcs11.txt"))
 		ReplacePaths(ProfilePath "\pkcs11.txt")
 
-	ReplacePaths(ProfilePath "\prefs.js", LibreWolfPathUri, ProfilePathUri, OverridesPath, NoJumpList)
+	ReplacePaths(ProfilePath "\prefs.js", LibreWolfPathUri, ProfilePathUri, OverridesCfgPath, OverridesJsonPath, NoJumpList)
 
 	FileDelete, %ProfilePath%\startupCache\*.*
 }
 
-ReplacePaths(FilePath, LibreWolfPathUri = False, ProfilePathUri = False, OverridesPath = False, NoJumpList = False) {
+ReplacePaths(FilePath, LibreWolfPathUri = False, ProfilePathUri = False, OverridesCfgPath = False, OverridesJsonPath = False, NoJumpList = False) {
 	If (FilePath = ProfilePath "\prefs.js" And !FileExist(FilePath)) {
-		FileAppend, %OverridesPath%`n%NoJumpList%, %FilePath%
+		FileAppend, %OverridesCfgPath%`n%OverridesJsonPath%`n%NoJumpList%, %FilePath%
 		If (ErrorLevel)
 			Die(_FileWriteError, FilePath)
 		Return
@@ -322,7 +323,11 @@ ReplacePaths(FilePath, LibreWolfPathUri = False, ProfilePathUri = False, Overrid
 		File := RegExReplace(File, "i)(,\s*"")[^""]+?(\Qlibrewolf.overrides.cfg""\E)", "$1" ProfilePathUri "/$2", Count)
 ;MsgBox, librewolf.overrides.cfg path was replaced %Count% times
 		If (Count = 0)
-			File .= OverridesPath
+			File .= OverridesCfgPath
+		File := RegExReplace(File, "i)(,\s*"")[^""]+?(\Qlibrewolf.overrides.json""\E)", "$1" ProfilePathUri "/$2", Count)
+;MsgBox, librewolf.overrides.json path was replaced %Count% times
+		If (Count = 0)
+			File .= OverridesJsonPath
 	}
 	File := RegExReplace(File, "i).:\\[^""]+?(\Q\\browser\\features\E)", DSlash(LibreWolfPath) "$1")
 	File := RegExReplace(File, "i).:\\[^""]+?(\Q\\extensions\E)", DSlash(ProfilePath) "$1")
