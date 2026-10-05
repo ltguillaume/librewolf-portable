@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://librewolf.dev/librewolf/portable
-;@Ahk2Exe-SetFileVersion 1.11.0
+;@Ahk2Exe-SetFileVersion 1.12.0
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -30,6 +30,7 @@ Global Args     := ""
 , RegKeyFound   := False
 , RegBackedUp   := False
 , StartMenu     := A_AppData "\Microsoft\Windows\Start Menu\Programs\LibreWolf*.lnk"
+, Maximize
 
 ; Strings
 Global _Title            := "LibreWolf Portable {}"
@@ -55,6 +56,8 @@ CheckArgs()
 If (ThisLauncherRunning()) {
 	UpdateProfile()	; Still needed for -P(rofile) ...
 	RunLibreWolf()
+	While (Maximize)
+		Sleep, 200
 	Exit()
 }
 CheckUpdates()
@@ -83,8 +86,9 @@ Init() {
 
 	SplitPath, PortableExe,,,, BaseName
 	IniFile := A_ScriptDir "\" BaseName ".ini"
-	IniRead, HideTrayIcon, %IniFile%, Settings, HideTrayIcon, 0
-	If (!HideTrayIcon)
+	IniRead, HideTray, %IniFile%, Settings, HideTrayIcon, 0
+	IniRead, Maximize, %IniFile%, Settings, StartMaximized, 0
+	If (!HideTray)
 		Menu, Tray, Icon
 }
 
@@ -356,7 +360,8 @@ RunLibreWolf() {
 	If (LibreWolfRunning() And !ThisLibreWolfRunning())
 		Args := "--new-instance " Args
 
-	ReleaseMem()
+	SetTimer, MaximizeWindow, -1
+
 ;MsgBox, %LibreWolfExe% -profile "%ProfilePath%" %Args%
 	RunWait, %LibreWolfExe% -Profile "%ProfilePath%" %Args%,, UseErrorLevel
 
@@ -366,6 +371,16 @@ RunLibreWolf() {
 			Message .= "`n`n" _MissingDLLs
 		MsgBox, 48, %_Title%, %Message%
 	}
+}
+
+MaximizeWindow() {
+	If (Maximize) {
+		WinWaitActive, ahk_exe %LibreWolfExe%,, 5
+		WinMaximize
+		Maximize := False	; Done maximizing, no need to wait anymore
+	}
+	SetTimer,, Delete
+	ReleaseMem()
 }
 
 GetCityHash() {

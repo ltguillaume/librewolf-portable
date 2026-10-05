@@ -34,12 +34,15 @@ If you choose to pin a running LibreWolf window to the taskbar, you'll actually 
 
 ## Settings
 ### Hiding the launcher's tray icon
-1. Create a new file called `LibreWolf-Portable.ini` with the following contents:
+1. Create a new text file called `LibreWolf-Portable.ini` with the following contents:
     ```
     [Settings]
     HideTrayIcon=1
     ```
 2. Put it in the same folder as `LibreWolf-Portable.exe`
+### Starting with a maximized LibreWolf window
+1. As above, create (or edit) the file `LibreWolf-Portable.ini`, adding the line `StartMaximized=1` underneath `[Settings]`
+2. Put it next to `LibreWolf-Portable.exe`
 
 ## Issues
 ### Anti-cheat software
