@@ -47,6 +47,8 @@ If you choose to pin a running LibreWolf window to the taskbar, you'll actually 
 ## Issues
 ### Anti-cheat software
 You might get annoyed by some anti-cheat software. It may wrongfully point at this launcher, because it is built upon AutoHotkey, which _can_ be used to cheat in games.
+### Asking for help
+If you experience another issue, you can search the problems (and solutions) reported in the [launcher issues](https://librewolf.dev/librewolf/portable/issues) and the [LibreWolf issues](https://librewolf.dev/librewolf/issues/issues), or create an issue yourself.
 
 ## Credits
 * [LibreWolf](https://librewolf.net) by the [LibreWolf Community](https://librewolf.net/#core-contributors)
