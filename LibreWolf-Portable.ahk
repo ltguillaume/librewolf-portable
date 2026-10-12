@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://librewolf.dev/librewolf/portable
-;@Ahk2Exe-SetFileVersion 1.12.0
+;@Ahk2Exe-SetFileVersion 1.13.0
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -25,11 +25,12 @@ Global Args     := ""
 , MozCommonPath := A_AppDataCommon "\Mozilla-1de4eec8-1241-4177-a864-e594e8d1fb38"
 , PortableExe   := A_IsCompiled ? A_ScriptFullPath : A_AhkPath
 , ProfilePath   := A_ScriptDir "\Profiles\Default"
+, PrefsPath     := ProfilePath "\prefs.js"
 , UpdaterBase   := A_ScriptDir "\LibreWolf-WinUpdater"
 , RegKey        := "HKCU\Software\LibreWolf\LibreWolf"
 , RegKeyFound   := False
 , RegBackedUp   := False
-, StartMenu     := A_AppData "\Microsoft\Windows\Start Menu\Programs\LibreWolf*.lnk"
+;, StartMenu     := A_AppData "\Microsoft\Windows\Start Menu\Programs\LibreWolf*.lnk"
 , Maximize
 
 ; Strings
@@ -46,9 +47,12 @@ Global _Title            := "LibreWolf Portable {}"
 , _BackupKeyFound        := "A backup registry key has been found:"
 , _BackupFoundActions    := "This means LibreWolf Portable has probably not been closed correctly. Continue to restore the found backup key after running, or remove the backup key yourself and press Retry to back up the current key."
 , _ErrorStarting         := "LibreWolf could not be started. Exit code:"
-, _MissingDLLs           := "You probably don't have msvcp140.dll and vcruntime140.dll present on your system. Put these files in the folder " LibreWolfPath ",`nor install the Visual C++ runtime libraries via https://librewolf.net."
+, _MissingDLLs           := "The Visual C++ Runtime libraries (msvcp140.dll, vcruntime140.dll etc.) are missing. Please download LibreWolf again from https://librewolf.net."
 , _FileReadError         := "Error reading file for modification:`n{}"
 , _FileWriteError        := "Error writing to file:`n{}`n`nClose all LibreWolf processes and check if your Windows user has write permissions to the profile folder " ProfilePath
+, _NoShortcut            := "// Portable: Prevent creation of per-user Start menu shortcut"
+, _NoPrivShortcut        := "// Portable: Prevent creation of per-user Start menu Private Browsing shorcut"
+, _NoJumpList            := "// Portable: Prevent traces via jump list registry keys"
 
 Init()
 CheckPaths()
@@ -139,6 +143,7 @@ CheckPaths() {
 				If (!ProfileDrive)
 					Profile := RegExReplace(Profile, "i)^Profiles\\")	; Fix custom profile location
 				ProfilePath := (ProfileDrive ? "" : A_ScriptDir "\Profiles\") Profile
+				PrefsPath   := ProfilePath "\prefs.js"
 				A_Args.RemoveAt(i, 2)
 			}
 
@@ -245,32 +250,46 @@ Backup() {
 			RegDelete, %RegKey%
 	}
 
-	Loop, Files, %StartMenu%
-		FileMove, %A_LoopFilePath%, % StrReplace(A_LoopFilePath, ".lnk", ".lnk.pbak"), 1
+; Shouldn't be necessary anymore with the overrides
+;	Loop, Files, %StartMenu%
+;		FileMove, %A_LoopFilePath%, % StrReplace(A_LoopFilePath, ".lnk", ".lnk.pbak"), 1
 }
 
 UpdateProfile() {
 	; Adjust absolute profile folder paths to current path
 	VarSetCapacity(LibreWolfPathUri, 300*2)
-	DllCall("shlwapi\UrlCreateFromPathW", "Str", LibreWolfPath, "Str", LibreWolfPathUri, "UInt*", 300, "UInt", 0x00040000)	// 0x00040000 = URL_ESCAPE_AS_UTF8
+	DllCall("shlwapi\UrlCreateFromPathW", "Str", LibreWolfPath, "Str", LibreWolfPathUri, "UInt*", 300, "UInt", 0x00040000)	; 0x00040000 = URL_ESCAPE_AS_UTF8
 	LibreWolfPathUri := StrReplace(LibreWolfPathUri, "///", "//")
 	VarSetCapacity(ProfilePathUri, 300*2)
 	DllCall("shlwapi\UrlCreateFromPathW", "Str", ProfilePath, "Str", ProfilePathUri, "UInt*", 300, "UInt", 0x00040000)
 	ProfilePathUri := StrReplace(ProfilePathUri, "///", "//")
-	OverridesCfgPath := "user_pref(""autoadmin.global_config_url"", """ ProfilePathUri "/librewolf.overrides.cfg"");"
-	OverridesJsonPath := "user_pref(""librewolf.policy.overrides"", """ ProfilePathUri "/librewolf.overrides.json"");"
-	JumpListPref := "browser.taskbar.lists.frequent.enabled"
-	NoJumpList := "user_pref(""" JumpListPref """, false);"
+	OverridesCfg   := "user_pref(""autoadmin.global_config_url"", """ ProfilePathUri "/librewolf.overrides.cfg"");"
+	OverridesJson  := "user_pref(""librewolf.policy.overrides"", """ ProfilePathUri "/librewolf.overrides.json"");"
+	OverridesPath  := ProfilePath "\librewolf.overrides.cfg"
+	NoShortcut     := "lockPref(""librewolf.browser.createdShortcut"", true);"
+	NoPrivShortcut := "lockPref(""browser.privateWindowSeparation.enabled"", false);"
+	NoJumpList     := "lockPref(""browser.taskbar.lists.frequent.enabled"", false);"
+
+	If (FileExist(OverridesPath)) {
+		FileRead, OverridesFile, %OverridesPath%
+		For Pref, Desc in Object(NoShortcut, _NoShortcut, NoPrivShortcut, _NoPrivShortcut, NoJumpList, _NoJumpList)
+			If (!InStr(OverridesFile, Pref))
+				FileAppend, %Desc%`n%Pref%`n, %OverridesPath%
+
+		OverridesFile := ""
+	} Else {
+		Prefs := ""
+			. _NoShortcut "`n" NoShortcut "`n"
+			. _NoPrivShortcut "`n" NoPrivShortcut "`n"
+			. _NoJumpList "`n" NoJumpList "`n"
+		FileAppend, %Prefs%, %OverridesPath%
+	}
 
 	; Skip path adjustments if profile path hasn't changed since last run
-	If (FileExist(ProfilePath "\prefs.js")) {
-		FileRead, PrefsFile, %ProfilePath%\prefs.js
+	If (FileExist(PrefsPath)) {
+		FileRead, PrefsFile, %PrefsPath%
 
-		; Prevent traces via jump list registry keys
-		If (!InStr(PrefsFile, JumpListPref))
-			FileAppend, %NoJumpList%`n, %ProfilePath%\prefs.js
-
-		If (InStr(PrefsFile, OverridesCfgPath) And InStr(PrefsFile, OverridesJsonPath)) {
+		If (InStr(PrefsFile, OverridesCfg) And InStr(PrefsFile, OverridesJson)) {
 ;MsgBox, Profile paths don't need to be updated.
 			Return
 		}
@@ -302,14 +321,14 @@ UpdateProfile() {
 	If (FileExist(ProfilePath "\pkcs11.txt"))
 		ReplacePaths(ProfilePath "\pkcs11.txt")
 
-	ReplacePaths(ProfilePath "\prefs.js", LibreWolfPathUri, ProfilePathUri, OverridesCfgPath, OverridesJsonPath, NoJumpList)
+	ReplacePaths(PrefsPath, LibreWolfPathUri, ProfilePathUri, OverridesCfg, OverridesJson)
 
 	FileDelete, %ProfilePath%\startupCache\*.*
 }
 
-ReplacePaths(FilePath, LibreWolfPathUri = False, ProfilePathUri = False, OverridesCfgPath = False, OverridesJsonPath = False, NoJumpList = False) {
-	If (FilePath = ProfilePath "\prefs.js" And !FileExist(FilePath)) {
-		FileAppend, %OverridesCfgPath%`n%OverridesJsonPath%`n%NoJumpList%, %FilePath%
+ReplacePaths(FilePath, LibreWolfPathUri = False, ProfilePathUri = False, OverridesCfg = "", OverridesJson = "") {
+	If (FilePath = PrefsPath And !FileExist(FilePath)) {
+		FileAppend, %OverridesCfg%`n%OverridesJson%`n, %FilePath%
 		If (ErrorLevel)
 			Die(_FileWriteError, FilePath)
 		Return
@@ -323,15 +342,15 @@ ReplacePaths(FilePath, LibreWolfPathUri = False, ProfilePathUri = False, Overrid
 	If (FilePath = ProfilePath "\pkcs11.txt")
 		File := RegExReplace(File, "i).:\\[^']+?'", DSlash(ProfilePath) "'")
 
-	If (ProfilePathUri And FilePath = ProfilePath "\prefs.js") {
+	If (ProfilePathUri And FilePath = PrefsPath) {
 		File := RegExReplace(File, "i)(,\s*"")[^""]+?(\Qlibrewolf.overrides.cfg""\E)", "$1" ProfilePathUri "/$2", Count)
 ;MsgBox, librewolf.overrides.cfg path was replaced %Count% times
 		If (Count = 0)
-			File .= OverridesCfgPath
+			File .= OverridesCfg
 		File := RegExReplace(File, "i)(,\s*"")[^""]+?(\Qlibrewolf.overrides.json""\E)", "$1" ProfilePathUri "/$2", Count)
 ;MsgBox, librewolf.overrides.json path was replaced %Count% times
 		If (Count = 0)
-			File .= OverridesJsonPath
+			File .= OverridesJson
 	}
 	File := RegExReplace(File, "i).:\\[^""]+?(\Q\\browser\\features\E)", DSlash(LibreWolfPath) "$1")
 	File := RegExReplace(File, "i).:\\[^""]+?(\Q\\extensions\E)", DSlash(ProfilePath) "$1")
@@ -542,11 +561,11 @@ CleanUp() {
 	For i, Folder in Folders
 		FileRemoveDir, %Folder%
 
-	; Remove/restore Start menu shortcut
-	Loop, Files, %StartMenu%
-		FileDelete, %A_LoopFilePath%
-	Loop, Files, %StartMenu%.pbak
-		FileMove, %A_LoopFilePath%, % StrReplace(A_LoopFilePath, ".lnk.pbak", ".lnk"), 1
+	; Remove/restore Start menu shortcut, shouldn't be necessary anymore with the overrides
+;	Loop, Files, %StartMenu%
+;		FileDelete, %A_LoopFilePath%
+;	Loop, Files, %StartMenu%.pbak
+;		FileMove, %A_LoopFilePath%, % StrReplace(A_LoopFilePath, ".lnk.pbak", ".lnk"), 1
 
 	; Clean-up
 	FileDelete, *jsonlz4.exe
