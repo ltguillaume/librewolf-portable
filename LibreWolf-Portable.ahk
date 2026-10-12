@@ -1,5 +1,5 @@
 ; LibreWolf Portable - https://librewolf.dev/librewolf/portable
-;@Ahk2Exe-SetFileVersion 1.13.0
+;@Ahk2Exe-SetFileVersion 1.14.0
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -27,7 +27,7 @@ Global Args     := ""
 , ProfilePath   := A_ScriptDir "\Profiles\Default"
 , PrefsPath     := ProfilePath "\prefs.js"
 , UpdaterBase   := A_ScriptDir "\LibreWolf-WinUpdater"
-, RegKey        := "HKCU\Software\LibreWolf\LibreWolf"
+, RegKey        := "HKCU\Software\Mozilla\LibreWolf"
 , RegKeyFound   := False
 , RegBackedUp   := False
 ;, StartMenu     := A_AppData "\Microsoft\Windows\Start Menu\Programs\LibreWolf*.lnk"
@@ -519,7 +519,7 @@ CleanUp() {
 		}
 	}
 
-	RegDelete, HKCU\Software\Mozilla\LibreWolf
+	RegDelete, HKCU\Software\LibreWolf	; Old key
 	RegDelete, HKCU\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Compatibility Assistant\Store, %LibreWolfExe%
 	RegDelete, HKCU\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Compatibility Assistant\Store, %PortableExe%
 	RegDeleteNested("HKCU\Software\Classes\AppUserModelId")
